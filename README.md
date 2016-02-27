@@ -23,3 +23,11 @@ To import it with maven, use this:
       <version>0.1.0-SNAPSHOT</version>
     </dependency>
 
+### allAsList
+
+If you want to join a list of futures, use `allAsList`:
+
+```java
+List<CompletableFuture<String>> futures = asList(completedFuture("a"), completedFuture("b"));
+CompletableFutures.allAsList(futures).thenAccept(list -> System.out.println(list));
+```
