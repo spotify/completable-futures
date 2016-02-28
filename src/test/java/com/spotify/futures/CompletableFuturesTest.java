@@ -21,7 +21,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.CompletionStage;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
@@ -70,7 +69,6 @@ public class CompletableFuturesTest {
         completedFuture("b")
     );
 
-    exception.expect(ExecutionException.class);
     exception.expectCause(is(ex));
     allAsList(input).toCompletableFuture().get();
   }
@@ -104,7 +102,6 @@ public class CompletableFuturesTest {
     final Exception ex = new Exception("boom");
     final CompletableFuture<String> future = exceptionallyCompletedFuture(ex);
 
-    exception.expect(ExecutionException.class);
     exception.expectCause(is(ex));
     future.get();
   }
