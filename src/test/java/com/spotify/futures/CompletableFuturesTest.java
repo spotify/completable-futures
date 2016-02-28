@@ -22,6 +22,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionStage;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
@@ -40,30 +41,30 @@ public class CompletableFuturesTest {
 
   @Test
   public void allAsList_empty() throws Exception {
-    final List<CompletableFuture<String>> input = emptyList();
-    assertThat(allAsList(input).get(), is(emptyList()));
+    final List<CompletionStage<String>> input = emptyList();
+    assertThat(allAsList(input).toCompletableFuture().get(), is(emptyList()));
   }
 
   @Test
   public void allAsList_one() throws Exception {
     final String value = "a";
-    final List<CompletableFuture<String>> input = singletonList(completedFuture(value));
-    assertThat(allAsList(input).get(), is(singletonList(value)));
+    final List<CompletionStage<String>> input = singletonList(completedFuture(value));
+    assertThat(allAsList(input).toCompletableFuture().get(), is(singletonList(value)));
   }
 
   @Test
   public void allAsList_multiple() throws Exception {
     final List<String> values = asList("a", "b", "c");
-    final List<CompletableFuture<String>> input = values.stream()
+    final List<CompletionStage<String>> input = values.stream()
         .map(CompletableFuture::completedFuture)
         .collect(toList());
-    assertThat(allAsList(input).get(), is(values));
+    assertThat(allAsList(input).toCompletableFuture().get(), is(values));
   }
 
   @Test
   public void allAsList_exceptional() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
-    final List<CompletableFuture<String>> input = asList(
+    final List<CompletionStage<String>> input = asList(
         completedFuture("a"),
         exceptionallyCompletedFuture(ex),
         completedFuture("b")
@@ -71,7 +72,7 @@ public class CompletableFuturesTest {
 
     exception.expect(ExecutionException.class);
     exception.expectCause(is(ex));
-    allAsList(input).get();
+    allAsList(input).toCompletableFuture().get();
   }
 
   @Test
@@ -82,7 +83,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void allAsList_containsNull() throws Exception {
-    final List<CompletableFuture<String>> input = asList(
+    final List<CompletionStage<String>> input = asList(
         completedFuture("a"),
         null,
         completedFuture("b")
