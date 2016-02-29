@@ -15,6 +15,8 @@
  */
 package com.spotify.futures;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -43,14 +45,24 @@ public final class CompletableFutures {
    */
   public static <T> CompletableFuture<List<T>> allAsList(
       List<? extends CompletionStage<? extends T>> stages) {
+    final int n = stages.size();
     @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<T>[] all = stages.stream()
-        .map(CompletionStage::toCompletableFuture)
-        .toArray(CompletableFuture[]::new);
+    final CompletableFuture<? extends T>[] all = new CompletableFuture[n];
+
+    for (int i = 0; i < n; i++) {
+      all[i] = stages.get(i).toCompletableFuture();
+    }
+
     return CompletableFuture.allOf(all)
-        .thenApply(i -> Stream.of(all)
-            .map(CompletableFuture::join)
-            .collect(toList()));
+        .thenApply(v -> {
+          final List<T> result = new ArrayList<>(n);
+
+          for (int i = 0; i < n; i++) {
+            result.add(all[i].join());
+          }
+
+          return result;
+        });
   }
 
   /**
