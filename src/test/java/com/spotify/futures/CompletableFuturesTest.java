@@ -70,7 +70,6 @@ public class CompletableFuturesTest {
         completedFuture("b")
     );
 
-    exception.expect(ExecutionException.class);
     exception.expectCause(is(ex));
     allAsList(input).get();
   }
@@ -104,7 +103,6 @@ public class CompletableFuturesTest {
     final Exception ex = new Exception("boom");
     final CompletableFuture<String> future = exceptionallyCompletedFuture(ex);
 
-    exception.expect(ExecutionException.class);
     exception.expectCause(is(ex));
     future.get();
   }
