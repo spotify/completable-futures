@@ -15,8 +15,11 @@
  */
 package com.spotify.futures;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -28,26 +31,38 @@ public final class CompletableFutures {
   }
 
   /**
-   * Returns a new {@code CompletableFuture} which completes to a list of all values of its input
-   * futures, if all succeed. The list of results is in the same order as the input futures.
+   * Returns a new {@link CompletableFuture} which completes to a list of all values of its input
+   * stages, if all succeed.  The list of results is in the same order as the input stages.
    *
-   * <p>If any of the given futures complete exceptionally, then the returned CompletableFuture
-   * also does so, with a CompletionException holding this exception as its cause.
+   * <p>If any of the given stages complete exceptionally, then the returned future also does so,
+   * with a CompletionException holding this exception as its cause.
    *
-   * <p>If no futures are provided, returns a CompletableFuture holding an empty list.
+   * <p>If no stages are provided, returns a future holding an empty list.
    *
-   * @param futures the futures to combine
-   * @return a future that completes to a list of the results of the supplied futures.
-   * @throws NullPointerException if the futures iterable or any of its elements are {@code null}.
+   * @param stages The stages to combine.
+   * @return A future that completes to a list of the results of the supplied stages.
+   * @throws NullPointerException if the stages list or any of its elements are {@code null}.
    */
   public static <T> CompletableFuture<List<T>> allAsList(
-      List<? extends CompletableFuture<? extends T>> futures) {
+      List<? extends CompletionStage<? extends T>> stages) {
+    final int n = stages.size();
     @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<T>[] all = futures.stream().toArray(CompletableFuture[]::new);
+    final CompletableFuture<? extends T>[] all = new CompletableFuture[n];
+
+    for (int i = 0; i < n; i++) {
+      all[i] = stages.get(i).toCompletableFuture();
+    }
+
     return CompletableFuture.allOf(all)
-        .thenApply(i -> Stream.of(all)
-            .map(CompletableFuture::join)
-            .collect(toList()));
+        .thenApply(v -> {
+          final List<T> result = new ArrayList<>(n);
+
+          for (int i = 0; i < n; i++) {
+            result.add(all[i].join());
+          }
+
+          return result;
+        });
   }
 
   /**
