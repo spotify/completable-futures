@@ -21,6 +21,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
@@ -40,14 +41,14 @@ public class CompletableFuturesTest {
 
   @Test
   public void allAsList_empty() throws Exception {
-    final List<CompletableFuture<String>> input = emptyList();
+    final List<CompletionStage<String>> input = emptyList();
     assertThat(allAsList(input).get(), is(emptyList()));
   }
 
   @Test
   public void allAsList_one() throws Exception {
     final String value = "a";
-    final List<CompletableFuture<String>> input = singletonList(completedFuture(value));
+    final List<CompletionStage<String>> input = singletonList(completedFuture(value));
     assertThat(allAsList(input).get(), is(singletonList(value)));
   }
 
@@ -63,7 +64,7 @@ public class CompletableFuturesTest {
   @Test
   public void allAsList_exceptional() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
-    final List<CompletableFuture<String>> input = asList(
+    final List<CompletionStage<String>> input = asList(
         completedFuture("a"),
         exceptionallyCompletedFuture(ex),
         completedFuture("b")
@@ -82,7 +83,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void allAsList_containsNull() throws Exception {
-    final List<CompletableFuture<String>> input = asList(
+    final List<CompletionStage<String>> input = asList(
         completedFuture("a"),
         null,
         completedFuture("b")
