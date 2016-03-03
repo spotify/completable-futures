@@ -23,6 +23,15 @@ To import it with maven, use this:
       <version>0.1.0-SNAPSHOT</version>
     </dependency>
 
+### exceptionallyCompletedFuture
+
+Creates a new {@code CompletableFuture} that is already exceptionally completed with the given
+exception:
+
+```java
+return CompletableFutures.exceptionallyCompletedFuture(new RuntimeException("boom"));
+```
+
 ### allAsList
 
 If you want to join a list of futures, use `allAsList`:
