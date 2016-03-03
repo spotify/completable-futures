@@ -40,3 +40,15 @@ If you want to join a list of futures, use `allAsList`:
 List<CompletableFuture<String>> futures = asList(completedFuture("a"), completedFuture("b"));
 CompletableFutures.allAsList(futures).thenAccept(list -> System.out.println(list));
 ```
+
+### joinAll
+
+A stream collector that combines multiple futures into a list. This is handy if you apply an
+asynchronous operation on a collection of entities:
+
+```java
+collection.stream()
+    .map(this::someAsyncFunc)
+    .collect(joinAll())
+    .thenApply(this::consumeList)
+```
