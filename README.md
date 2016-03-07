@@ -52,3 +52,12 @@ collection.stream()
     .collect(joinAll())
     .thenApply(this::consumeList)
 ```
+
+### Missing parts of the CompletableFuture API
+
+The CompletableFutures class includes utility functions for operating on futures that is missing from the builtin API.
+
+* `dereference` - unwrap a `CompletionStage<CompletionStage<T>>` to a plain `CompletionStage<T>`.
+* `exceptionallyCompose` - like `CompletableFuture.exceptionally` but lets you return a new CompletionStage instead of a direct value
+* `handleCompose` - like `CompletableFuture.handle` but lets you return a new CompletionStage instead of a direct value
+* `exceptionallyCompletedFuture` - like `CompletableFuture.completedFuture` but lets you create an exceptional future instead
