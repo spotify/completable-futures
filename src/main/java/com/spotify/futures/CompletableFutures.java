@@ -17,6 +17,7 @@ package com.spotify.futures;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -62,6 +63,29 @@ public final class CompletableFutures {
     final CompletableFuture<T> future = new CompletableFuture<>();
     future.completeExceptionally(throwable);
     return future;
+  }
+
+  /**
+   * Collect a stream of {@link CompletableFuture}s into a single future holding a list of the
+   * joined entities.
+   * Usage:
+   * <pre>
+   *   collection.stream()
+   *      .map(this::someAsyncFunc)
+   *      .collect(joinAll())
+   *      .thenApply(this::consumeList)
+   * </pre>
+   * The generated CompletableFuture will complete to a list of all entities, in the order they were
+   * encountered in the original stream. Similar to
+   * {@link CompletableFuture#allOf(CompletableFuture[])}, if any of the input futures complete
+   * exceptionally, then the returned CompletableFuture also does so, with a CompletionException
+   * holding this exception as its cause.
+   *
+   * @throws NullPointerException if any future in the stream is {@code null}.
+   */
+  public static <T> Collector<CompletableFuture<T>, List<CompletableFuture<T>>,
+                              CompletableFuture<List<T>>> joinAll() {
+    return new CompletableFutureCollector<>();
   }
 
 }
