@@ -23,6 +23,15 @@ To import it with maven, use this:
       <version>0.1.0-SNAPSHOT</version>
     </dependency>
 
+### exceptionallyCompletedFuture
+
+Creates a new {@code CompletableFuture} that is already exceptionally completed with the given
+exception:
+
+```java
+return CompletableFutures.exceptionallyCompletedFuture(new RuntimeException("boom"));
+```
+
 ### allAsList
 
 If you want to join a list of futures, use `allAsList`:
@@ -30,4 +39,16 @@ If you want to join a list of futures, use `allAsList`:
 ```java
 List<CompletableFuture<String>> futures = asList(completedFuture("a"), completedFuture("b"));
 CompletableFutures.allAsList(futures).thenAccept(list -> System.out.println(list));
+```
+
+### joinAll
+
+A stream collector that combines multiple futures into a list. This is handy if you apply an
+asynchronous operation on a collection of entities:
+
+```java
+collection.stream()
+    .map(this::someAsyncFunc)
+    .collect(joinAll())
+    .thenApply(this::consumeList)
 ```
