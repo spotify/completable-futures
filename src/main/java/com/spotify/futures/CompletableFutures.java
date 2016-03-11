@@ -215,4 +215,8 @@ public final class CompletableFutures {
         .thenApply(list -> function.apply(
             (A) list.get(0), (B) list.get(1), (C) list.get(2), (D) list.get(3), (E) list.get(4)));
   }
+
+  public static CompletionStage<JoinedResults> join(CompletableFuture<?>... futures) {
+    return JoinedResults.from(futures);
+  }
 }
