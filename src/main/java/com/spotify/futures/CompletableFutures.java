@@ -15,16 +15,13 @@
  */
 package com.spotify.futures;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 public final class CompletableFutures {
 
@@ -47,14 +44,22 @@ public final class CompletableFutures {
    */
   public static <T> CompletableFuture<List<T>> allAsList(
       List<? extends CompletionStage<? extends T>> stages) {
+    // We use traditional for-loops instead of streams here for performance reasons,
+    // see AllAsListBenchmark
+
     @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<T>[] all = stages.stream()
-        .map(CompletionStage::toCompletableFuture)
-        .toArray(CompletableFuture[]::new);
+    final CompletableFuture<? extends T>[] all = new CompletableFuture[stages.size()];
+    for (int i = 0; i < stages.size(); i++) {
+      all[i] = stages.get(i).toCompletableFuture();
+    }
     return CompletableFuture.allOf(all)
-        .thenApply(i -> Stream.of(all)
-            .map(CompletableFuture::join)
-            .collect(toList()));
+        .thenApply(ignored -> {
+          final List<T> result = new ArrayList<>(all.length);
+          for (int i = 0; i < all.length; i++) {
+            result.add(all[i].join());
+          }
+          return result;
+        });
   }
 
   /**
