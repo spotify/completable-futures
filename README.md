@@ -32,7 +32,9 @@ exception:
 return CompletableFutures.exceptionallyCompletedFuture(new RuntimeException("boom"));
 ```
 
-### allAsList
+### Combining more than two things
+
+#### allAsList
 
 If you want to join a list of futures, use `allAsList`:
 
@@ -41,7 +43,7 @@ List<CompletableFuture<String>> futures = asList(completedFuture("a"), completed
 CompletableFutures.allAsList(futures).thenAccept(list -> System.out.println(list));
 ```
 
-### joinAll
+#### joinAll
 
 A stream collector that combines multiple futures into a list. This is handy if you apply an
 asynchronous operation on a collection of entities:
@@ -51,6 +53,16 @@ collection.stream()
     .map(this::someAsyncFunc)
     .collect(joinAll())
     .thenApply(this::consumeList)
+```
+
+#### combineN
+
+The builtin API includes `future.thenCombine(otherFuture, function)` but if you want to combine more than two things it gets trickier.
+To help out with that, you can use:
+```java
+CompletableFutures.combine3(f1, f2, f3, (a, b, c) -> a + b + c);
+CompletableFutures.combine4(f1, f2, f3, f4, (a, b, c, d) -> a + b + c + d);
+CompletableFutures.combine5(f1, f2, f3, f4, f5, (a, b, c, d, e) -> a + b + c + d + e);
 ```
 
 ### Missing parts of the CompletableFuture API
