@@ -15,16 +15,15 @@
  */
 package com.spotify.futures.jmh;
 
+import com.spotify.futures.CompletableFutures;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -37,37 +36,37 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static java.lang.Integer.parseInt;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
 
-
-@BenchmarkMode(Mode.SampleTime)
-@Warmup(iterations = 2)
-@Measurement(iterations = 3)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @SuppressWarnings("unused")
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class AllAsListBenchmark {
 
   @State(Scope.Benchmark)
   public static class Input {
-
     @Param({
         "4",
         "16",
         "64",
         "256",
         "1024"
-    })
-    String inputSize;
+    }) int inputSize;
 
     public List<CompletionStage<String>> stages() {
-      return Collections.nCopies(parseInt(inputSize), completedFuture("hello"));
+      return Collections.nCopies(inputSize, completedFuture("hello"));
     }
   }
 
   @Benchmark
-  @Fork(1)
+  public void actual(final Input input) throws Exception {
+    final List<CompletionStage<String>> stages = input.stages();
+    final CompletableFuture<List<String>> future = CompletableFutures.allAsList(stages);
+    future.get();
+  }
+
+  @Benchmark
   public void stream(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages();
 
@@ -84,7 +83,6 @@ public class AllAsListBenchmark {
   }
 
   @Benchmark
-  @Fork(1)
   public void instantiateAndFor(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages();
 
@@ -105,9 +103,7 @@ public class AllAsListBenchmark {
     future.get();
   }
 
-
   @Benchmark
-  @Fork(1)
   public void instantiateAndForeach(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages();
 
@@ -129,10 +125,9 @@ public class AllAsListBenchmark {
     future.get();
   }
 
-
   public static void main(String[] args) throws Exception {
-    Options opt = new OptionsBuilder()
-        .include(".*" + AllAsListBenchmark.class.getSimpleName() + ".*")
+    final Options opt = new OptionsBuilder()
+        .include(AllAsListBenchmark.class.getSimpleName())
         .build();
     new Runner(opt).run();
   }
