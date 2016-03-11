@@ -16,6 +16,7 @@
 package com.spotify.futures;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -189,5 +190,29 @@ public final class CompletableFutures {
   private static <T> CompletionStage<CompletionStage<T>> wrap(CompletionStage<T> future) {
     //noinspection unchecked
     return future.thenApply(CompletableFuture::completedFuture);
+  }
+
+  public static <R, A, B, C> CompletionStage<R> combine3(
+      CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
+      Function3<R, A, B, C> function) {
+    return allAsList(Arrays.asList(a, b, c))
+        .thenApply(list -> function.apply((A) list.get(0), (B) list.get(1), (C) list.get(2)));
+  }
+
+  public static <R, A, B, C, D> CompletionStage<R> combine4(
+      CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c, CompletionStage<D> d,
+      Function4<R, A, B, C, D> function) {
+    return allAsList(Arrays.asList(a, b, c, d))
+        .thenApply(list -> function.apply(
+            (A) list.get(0), (B) list.get(1), (C) list.get(2), (D) list.get(3)));
+  }
+
+  public static <R, A, B, C, D, E> CompletionStage<R> combine5(
+      CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
+      CompletionStage<D> d, CompletionStage<E> e,
+      Function5<R, A, B, C, D, E> function) {
+    return allAsList(Arrays.asList(a, b, c, d, e))
+        .thenApply(list -> function.apply(
+            (A) list.get(0), (B) list.get(1), (C) list.get(2), (D) list.get(3), (E) list.get(4)));
   }
 }
