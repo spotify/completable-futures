@@ -22,12 +22,18 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
+import static com.spotify.futures.CompletableFutures.combine2;
+import static com.spotify.futures.CompletableFutures.combine3;
+import static com.spotify.futures.CompletableFutures.combine4;
+import static com.spotify.futures.CompletableFutures.combine5;
+import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
+import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
 import static com.spotify.futures.CompletableFutures.getCompleted;
+import static com.spotify.futures.CompletableFutures.handleCompose;
 import static com.spotify.futures.CompletableFutures.joinList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -42,7 +48,6 @@ import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class CompletableFuturesTest {
 
@@ -103,16 +108,25 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testGetCompleted() throws Exception {
+  public void getCompleted_done() throws Exception {
     final CompletionStage<String> future = completedFuture("hello");
-    assertEquals("hello", CompletableFutures.getCompleted(future));
+    assertEquals("hello", getCompleted(future));
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void testGetCompletedFails() throws Exception {
-    final CompletionStage<String> future = new CompletableFuture<String>();
-    CompletableFutures.getCompleted(future);
-    fail();
+  @Test
+  public void getCompleted_exceptional() throws Exception {
+    final Exception ex = new Exception("boom");
+    final CompletionStage<String> future = exceptionallyCompletedFuture(ex);
+    exception.expectCause(is(ex));
+    getCompleted(future);
+  }
+
+  @Test
+  public void getCompleted_pending() throws Exception {
+    final CompletionStage<String> future = new CompletableFuture<>();
+
+    exception.expect(IllegalStateException.class);
+    getCompleted(future);
   }
 
   @Test
@@ -137,7 +151,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListEmpty() throws Exception {
+  public void joinList_empty() throws Exception {
     final List<String> result = Stream.<CompletableFuture<String>>of()
         .collect(joinList())
         .get();
@@ -147,7 +161,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListOne() throws Exception {
+  public void joinList_one() throws Exception {
     final List<String> result = Stream.of(completedFuture("a"))
         .collect(joinList())
         .get();
@@ -157,9 +171,9 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListTwo() throws Exception {
-    CompletableFuture<String> a = completedFuture("hello");
-    CompletableFuture<String> b = completedFuture("world");
+  public void joinList_two() throws Exception {
+    final CompletableFuture<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = completedFuture("world");
 
     final List<String> result = Stream.of(a, b)
         .collect(joinList())
@@ -168,10 +182,10 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListMixedStages() throws Exception {
+  public void joinList_mixedStageTypes() throws Exception {
     // Note that a and b use different subclasses of CompletionStage
-    CompletionStage<String> a = completedFuture("hello");
-    CompletableFuture<String> b = completedFuture("world");
+    final CompletionStage<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = completedFuture("world");
 
     final List<String> result = Stream.of(a, b)
         .collect(joinList())
@@ -180,10 +194,10 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListMixedTypes() throws Exception {
+  public void joinList_mixedValueTypes() throws Exception {
     // Note that a and b have different result types
-    CompletionStage<Integer> a = completedFuture(3);
-    CompletableFuture<Long> b = completedFuture(4L);
+    final CompletionStage<Integer> a = completedFuture(3);
+    final CompletableFuture<Long> b = completedFuture(4L);
 
     final List<? extends Number> result = Stream.of(a, b)
         .collect(joinList())
@@ -192,11 +206,10 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListExceptional() throws Exception {
+  public void joinList_exceptional() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
-
-    CompletableFuture<String> a = completedFuture("hello");
-    CompletableFuture<String> b = exceptionallyCompletedFuture(ex);
+    final CompletableFuture<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = exceptionallyCompletedFuture(ex);
 
     final CompletableFuture<List<String>> result = Stream.of(a, b).collect(joinList());
 
@@ -205,173 +218,170 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListContainsNull() throws Exception {
-    CompletableFuture<String> a = completedFuture("hello");
-    CompletableFuture<String> b = null;
+  public void joinList_containsNull() throws Exception {
+    final CompletableFuture<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = null;
 
     exception.expect(NullPointerException.class);
     Stream.of(a, b).collect(joinList());
   }
 
   @Test
-  public void testDereferenceFailure() throws Exception {
-    final CompletionStage<Object> future = exceptionallyCompletedFuture(new IllegalArgumentException());
-    final CompletionStage<CompletionStage<Object>> future2 = completedFuture(future);
-    final CompletionStage<Object> dereferenced = CompletableFutures.dereference(future2);
-
-    exception.expectCause(isA(IllegalArgumentException.class));
-    CompletableFutures.getCompleted(dereferenced);
-  }
-
-  @Test
-  public void testDereferenceNull() throws Exception {
-    final CompletionStage<CompletableFuture<Object>> future2 = completedFuture(null);
-    final CompletionStage<Object> dereferenced = CompletableFutures.dereference(future2);
-
-    exception.expectCause(isA(NullPointerException.class));
-    CompletableFutures.getCompleted(dereferenced);
-  }
-
-  @Test
-  public void testDereferenceSuccess() throws Exception {
+  public void dereference_completed() throws Exception {
     final CompletionStage<String> future = completedFuture("hello");
-    final CompletionStage<CompletionStage<String>> future2 = completedFuture(future);
-    final CompletionStage<String> dereferenced = CompletableFutures.dereference(future2);
-    assertEquals("hello", CompletableFutures.getCompleted(dereferenced));
+    final CompletionStage<String> dereferenced = dereference(completedFuture(future));
+
+    assertThat(dereferenced, is(future));
   }
 
   @Test
-  public void testExceptionallyCompose() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void dereference_exceptional() throws Exception {
+    final IllegalArgumentException ex = new IllegalArgumentException();
+    final CompletionStage<Object> future = exceptionallyCompletedFuture(ex);
+    final CompletionStage<Object> dereferenced = dereference(completedFuture(future));
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future,
-                                                                                     new Function<Throwable, CompletionStage<String>>() {
-                                                                                       @Override
-                                                                                       public CompletionStage<String> apply(
-                                                                                           Throwable throwable) {
-                                                                                         return completedFuture("hello");
-                                                                                       }
-                                                                                     });
-
-    assertEquals("hello", CompletableFutures.getCompleted(composed));
-
+    exception.expectCause(is(ex));
+    getCompleted(dereferenced);
   }
 
   @Test
-  public void testExceptionallyComposeFailure() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void dereference_null() throws Exception {
+    final CompletionStage<Object> dereferenced = dereference(completedFuture(null));
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future,
-                                                                                     new Function<Throwable, CompletionStage<String>>() {
-                                                                                       @Override
-                                                                                       public CompletionStage<String> apply(
-                                                                                           Throwable throwable) {
-                                                                                         return
-                                                                                             exceptionallyCompletedFuture(
-                                                                                                 new IllegalStateException());
-                                                                                       }
-                                                                                     });
-
-    exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    exception.expectCause(isA(NullPointerException.class));
+    getCompleted(dereferenced);
   }
 
   @Test
-  public void testExceptionallyComposeUnused() throws Exception {
+  public void exceptionallyCompose_complete() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final CompletableFuture<String> fallback = completedFuture("hello");
+
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
+
+    assertThat(composed, is(fallback));
+  }
+
+  @Test
+  public void exceptionallyCompose_exceptional() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final IllegalStateException fallbackException = new IllegalStateException();
+    final CompletableFuture<String> fallback = exceptionallyCompletedFuture(fallbackException);
+
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
+
+    exception.expectCause(is(fallbackException));
+    getCompleted(composed);
+  }
+
+  @Test
+  public void exceptionallyCompose_unused() throws Exception {
     final CompletionStage<String> future = completedFuture("hello");
+    final IllegalStateException fallbackException = new IllegalStateException();
+    final CompletableFuture<String> fallback = exceptionallyCompletedFuture(fallbackException);
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future, new Function<Throwable, CompletionStage<String>>() {
-      @Override
-      public CompletionStage<String> apply(Throwable throwable) {
-        return exceptionallyCompletedFuture(new IllegalStateException());
-      }
-    });
-    assertEquals("hello", CompletableFutures.getCompleted(composed));
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
+    assertThat(getCompleted(composed), is("hello"));
   }
 
   @Test
-  public void testExceptionallyComposeThrows() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void exceptionallyCompose_throws() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final IllegalStateException ex = new IllegalStateException();
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future, new Function<Throwable, CompletionStage<String>>() {
-      @Override
-      public CompletionStage<String> apply(Throwable throwable) {
-        throw new IllegalStateException();
-      }
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> {
+      throw ex;
     });
 
-    exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    exception.expectCause(is(ex));
+    getCompleted(composed);
   }
 
   @Test
-  public void testExceptionallyComposeReturnsNull() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void exceptionallyCompose_returnsNull() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future, new Function<Throwable, CompletionStage<String>>() {
-      @Override
-      public CompletionStage<String> apply(Throwable throwable) {
-        return null;
-      }
-    });
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> null);
 
     exception.expectCause(isA(NullPointerException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
-  public void testHandleCompose() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void handleCompose_completed() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
 
-    final CompletionStage<String> composed = CompletableFutures.handleCompose(
-        future, (s, throwable) -> completedFuture("hello"));
+    final CompletionStage<String> composed =
+        handleCompose(future, (s, t) -> completedFuture("hello"));
 
-    assertEquals("hello", CompletableFutures.getCompleted(composed));
+    assertEquals("hello", getCompleted(composed));
 
   }
 
   @Test
-  public void testHandleComposeFailure() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void handleCompose_failure() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final IllegalStateException ex = new IllegalStateException();
 
-    final CompletionStage<String> composed = CompletableFutures.handleCompose(
-        future, (s, throwable) -> exceptionallyCompletedFuture(new IllegalStateException()));
+    final CompletionStage<String> composed =
+        handleCompose(future, (s, t) -> exceptionallyCompletedFuture(ex));
 
-    exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    exception.expectCause(is(ex));
+    getCompleted(composed);
   }
 
   @Test
-  public void testHandleComposeThrows() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void handleCompose_throws() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final IllegalStateException ex = new IllegalStateException();
 
-    final CompletionStage<String> composed = CompletableFutures.handleCompose(
-        future, (s, throwable) -> { throw new IllegalStateException(); });
+    final CompletionStage<String> composed = handleCompose(future, (s, throwable) -> { throw ex; });
 
-    exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    exception.expectCause(is(ex));
+    getCompleted(composed);
   }
 
   @Test
-  public void testHandleComposeReturnsNull() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
-    final CompletionStage<String> composed = CompletableFutures.handleCompose(future, (s, throwable) -> null);
+  public void handleCompose_returnsNull() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final CompletionStage<String> composed = handleCompose(future, (s, throwable) -> null);
 
     exception.expectCause(isA(NullPointerException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
-  public void testCombine3() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine3(
+  public void combine2_completed() throws Exception {
+    final CompletionStage<String> future = combine2(
+        completedFuture("a"), completedFuture("b"),
+        (a, b) -> a + b);
+
+    assertEquals("ab", getCompleted(future));
+  }
+
+  @Test
+  public void combine2_exceptional() throws Exception {
+    final CompletionStage<String> future = combine2(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b) -> a + b);
+
+    exception.expectCause(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void combine3_completed() throws Exception {
+    final CompletionStage<String> future = combine3(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         (a, b, c) -> a + b + c);
+
     assertEquals("abc", getCompleted(future));
   }
 
   @Test
-  public void testCombine3Fails() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine3(
+  public void combine3_exceptional() throws Exception {
+    final CompletionStage<String> future = combine3(
         completedFuture("a"), completedFuture("b"),
         exceptionallyCompletedFuture(new IllegalStateException()),
         (a, b, c) -> a + b + c);
@@ -381,17 +391,18 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testCombine4() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine4(
+  public void combine4_completed() throws Exception {
+    final CompletionStage<String> future = combine4(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         (a, b, c, d) -> a + b + c + d);
+
     assertEquals("abcd", getCompleted(future));
   }
 
   @Test
-  public void testCombine4Fails() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine4(
+  public void combine4_exceptional() throws Exception {
+    final CompletionStage<String> future = combine4(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         exceptionallyCompletedFuture(new IllegalStateException()),
             (a, b, c, d)-> a + b + c + d);
@@ -401,17 +412,18 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testCombine5() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine5(
+  public void combine5_completed() throws Exception {
+    final CompletionStage<String> future = combine5(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"), completedFuture("e"),
         (a, b, c, d, e) -> a + b + c + d + e);
+
     assertEquals("abcde", getCompleted(future));
   }
 
   @Test
-  public void testCombine5Fails() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine5(
+  public void combine5_exceptional() throws Exception {
+    final CompletionStage<String> future = combine5(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         exceptionallyCompletedFuture(new IllegalStateException()),
