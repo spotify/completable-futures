@@ -24,6 +24,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
+
 public final class CompletableFutures {
 
   private CompletableFutures() {
@@ -78,7 +81,7 @@ public final class CompletableFutures {
   }
 
   /**
-   * Collect a stream of {@link CompletableFuture}s into a single future holding a list of the
+   * Collect a stream of {@link CompletionStage}s into a single future holding a list of the
    * joined entities.
    * Usage:
    * <pre>
@@ -95,9 +98,9 @@ public final class CompletableFutures {
    *
    * @throws NullPointerException if any future in the stream is {@code null}.
    */
-  public static <T> Collector<CompletableFuture<T>, List<CompletableFuture<T>>,
-                              CompletableFuture<List<T>>> joinAll() {
-    return new CompletableFutureCollector<>();
+  public static <T, S extends CompletionStage<? extends T>>
+  Collector<S, ?, CompletableFuture<List<T>>> joinAll() {
+    return collectingAndThen(toList(), CompletableFutures::allAsList);
   }
 
   /**
