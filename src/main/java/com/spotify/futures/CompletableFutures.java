@@ -87,7 +87,7 @@ public final class CompletableFutures {
    * <pre>
    *   collection.stream()
    *      .map(this::someAsyncFunc)
-   *      .collect(joinAll())
+   *      .collect(joinList())
    *      .thenApply(this::consumeList)
    * </pre>
    * The generated CompletableFuture will complete to a list of all entities, in the order they were
@@ -99,7 +99,7 @@ public final class CompletableFutures {
    * @throws NullPointerException if any future in the stream is {@code null}.
    */
   public static <T, S extends CompletionStage<? extends T>>
-  Collector<S, ?, CompletableFuture<List<T>>> joinAll() {
+  Collector<S, ?, CompletableFuture<List<T>>> joinList() {
     return collectingAndThen(toList(), CompletableFutures::allAsList);
   }
 

@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.getCompleted;
-import static com.spotify.futures.CompletableFutures.joinAll;
+import static com.spotify.futures.CompletableFutures.joinList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -137,9 +137,9 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinAllEmpty() throws Exception {
+  public void testJoinListEmpty() throws Exception {
     final List<String> result = Stream.<CompletableFuture<String>>of()
-        .collect(joinAll())
+        .collect(joinList())
         .get();
 
     assertThat(result, not(nullValue()));
@@ -147,9 +147,9 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinAllOne() throws Exception {
+  public void testJoinListOne() throws Exception {
     final List<String> result = Stream.of(completedFuture("a"))
-        .collect(joinAll())
+        .collect(joinList())
         .get();
 
     assertThat(result, hasSize(1));
@@ -157,60 +157,60 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinAllTwo() throws Exception {
+  public void testJoinListTwo() throws Exception {
     CompletableFuture<String> a = completedFuture("hello");
     CompletableFuture<String> b = completedFuture("world");
 
     final List<String> result = Stream.of(a, b)
-        .collect(joinAll())
+        .collect(joinList())
         .get();
     assertThat(result, contains("hello", "world"));
   }
 
   @Test
-  public void testJoinAllMixedStages() throws Exception {
+  public void testJoinListMixedStages() throws Exception {
     // Note that a and b use different subclasses of CompletionStage
     CompletionStage<String> a = completedFuture("hello");
     CompletableFuture<String> b = completedFuture("world");
 
     final List<String> result = Stream.of(a, b)
-        .collect(joinAll())
+        .collect(joinList())
         .get();
     assertThat(result, contains("hello", "world"));
   }
 
   @Test
-  public void testJoinAllMixedTypes() throws Exception {
+  public void testJoinListMixedTypes() throws Exception {
     // Note that a and b have different result types
     CompletionStage<Integer> a = completedFuture(3);
     CompletableFuture<Long> b = completedFuture(4L);
 
     final List<? extends Number> result = Stream.of(a, b)
-        .collect(joinAll())
+        .collect(joinList())
         .get();
     assertThat(result, contains(3, 4L));
   }
 
   @Test
-  public void testJoinAllExceptional() throws Exception {
+  public void testJoinListExceptional() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
 
     CompletableFuture<String> a = completedFuture("hello");
     CompletableFuture<String> b = exceptionallyCompletedFuture(ex);
 
-    final CompletableFuture<List<String>> result = Stream.of(a, b).collect(joinAll());
+    final CompletableFuture<List<String>> result = Stream.of(a, b).collect(joinList());
 
     exception.expectCause(is(ex));
     result.get();
   }
 
   @Test
-  public void testJoinAllContainsNull() throws Exception {
+  public void testJoinListContainsNull() throws Exception {
     CompletableFuture<String> a = completedFuture("hello");
     CompletableFuture<String> b = null;
 
     exception.expect(NullPointerException.class);
-    Stream.of(a, b).collect(joinAll());
+    Stream.of(a, b).collect(joinList());
   }
 
   @Test
