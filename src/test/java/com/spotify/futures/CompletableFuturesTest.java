@@ -42,7 +42,6 @@ import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class CompletableFuturesTest {
 
@@ -103,16 +102,25 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testGetCompleted() throws Exception {
+  public void getCompleted_done() throws Exception {
     final CompletionStage<String> future = completedFuture("hello");
-    assertEquals("hello", CompletableFutures.getCompleted(future));
+    assertEquals("hello", getCompleted(future));
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void testGetCompletedFails() throws Exception {
-    final CompletionStage<String> future = new CompletableFuture<String>();
-    CompletableFutures.getCompleted(future);
-    fail();
+  @Test
+  public void getCompleted_exceptional() throws Exception {
+    final Exception ex = new Exception("boom");
+    final CompletionStage<String> future = exceptionallyCompletedFuture(ex);
+    exception.expectCause(is(ex));
+    getCompleted(future);
+  }
+
+  @Test
+  public void getCompleted_pending() throws Exception {
+    final CompletionStage<String> future = new CompletableFuture<>();
+
+    exception.expect(IllegalStateException.class);
+    getCompleted(future);
   }
 
   @Test
@@ -220,7 +228,7 @@ public class CompletableFuturesTest {
     final CompletionStage<Object> dereferenced = CompletableFutures.dereference(future2);
 
     exception.expectCause(isA(IllegalArgumentException.class));
-    CompletableFutures.getCompleted(dereferenced);
+    getCompleted(dereferenced);
   }
 
   @Test
@@ -229,7 +237,7 @@ public class CompletableFuturesTest {
     final CompletionStage<Object> dereferenced = CompletableFutures.dereference(future2);
 
     exception.expectCause(isA(NullPointerException.class));
-    CompletableFutures.getCompleted(dereferenced);
+    getCompleted(dereferenced);
   }
 
   @Test
@@ -237,7 +245,7 @@ public class CompletableFuturesTest {
     final CompletionStage<String> future = completedFuture("hello");
     final CompletionStage<CompletionStage<String>> future2 = completedFuture(future);
     final CompletionStage<String> dereferenced = CompletableFutures.dereference(future2);
-    assertEquals("hello", CompletableFutures.getCompleted(dereferenced));
+    assertEquals("hello", getCompleted(dereferenced));
   }
 
   @Test
@@ -253,7 +261,7 @@ public class CompletableFuturesTest {
                                                                                        }
                                                                                      });
 
-    assertEquals("hello", CompletableFutures.getCompleted(composed));
+    assertEquals("hello", getCompleted(composed));
 
   }
 
@@ -273,7 +281,7 @@ public class CompletableFuturesTest {
                                                                                      });
 
     exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
@@ -286,7 +294,7 @@ public class CompletableFuturesTest {
         return exceptionallyCompletedFuture(new IllegalStateException());
       }
     });
-    assertEquals("hello", CompletableFutures.getCompleted(composed));
+    assertEquals("hello", getCompleted(composed));
   }
 
   @Test
@@ -301,7 +309,7 @@ public class CompletableFuturesTest {
     });
 
     exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
@@ -316,7 +324,7 @@ public class CompletableFuturesTest {
     });
 
     exception.expectCause(isA(NullPointerException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
@@ -326,7 +334,7 @@ public class CompletableFuturesTest {
     final CompletionStage<String> composed = CompletableFutures.handleCompose(
         future, (s, throwable) -> completedFuture("hello"));
 
-    assertEquals("hello", CompletableFutures.getCompleted(composed));
+    assertEquals("hello", getCompleted(composed));
 
   }
 
@@ -338,7 +346,7 @@ public class CompletableFuturesTest {
         future, (s, throwable) -> exceptionallyCompletedFuture(new IllegalStateException()));
 
     exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
@@ -349,7 +357,7 @@ public class CompletableFuturesTest {
         future, (s, throwable) -> { throw new IllegalStateException(); });
 
     exception.expectCause(isA(IllegalStateException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
@@ -358,7 +366,7 @@ public class CompletableFuturesTest {
     final CompletionStage<String> composed = CompletableFutures.handleCompose(future, (s, throwable) -> null);
 
     exception.expectCause(isA(NullPointerException.class));
-    CompletableFutures.getCompleted(composed);
+    getCompleted(composed);
   }
 
   @Test
