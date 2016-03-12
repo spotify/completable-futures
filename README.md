@@ -43,7 +43,7 @@ List<CompletableFuture<String>> futures = asList(completedFuture("a"), completed
 CompletableFutures.allAsList(futures).thenAccept(list -> System.out.println(list));
 ```
 
-#### joinAll
+#### joinList
 
 A stream collector that combines multiple futures into a list. This is handy if you apply an
 asynchronous operation on a collection of entities:
@@ -51,7 +51,7 @@ asynchronous operation on a collection of entities:
 ```java
 collection.stream()
     .map(this::someAsyncFunc)
-    .collect(joinAll())
+    .collect(CompletableFutures.joinList())
     .thenApply(this::consumeList)
 ```
 
