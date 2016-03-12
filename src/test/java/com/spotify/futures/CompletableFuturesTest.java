@@ -25,6 +25,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
+import static com.spotify.futures.CompletableFutures.combine2;
+import static com.spotify.futures.CompletableFutures.combine3;
+import static com.spotify.futures.CompletableFutures.combine4;
+import static com.spotify.futures.CompletableFutures.combine5;
 import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
@@ -347,16 +351,37 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testCombine3() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine3(
+  public void combine2_completed() throws Exception {
+    final CompletionStage<String> future = combine2(
+        completedFuture("a"), completedFuture("b"),
+        (a, b) -> a + b);
+
+    assertEquals("ab", getCompleted(future));
+  }
+
+  @Test
+  public void combine2_exceptional() throws Exception {
+    final CompletionStage<String> future = combine2(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b) -> a + b);
+
+    exception.expectCause(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void combine3_completed() throws Exception {
+    final CompletionStage<String> future = combine3(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         (a, b, c) -> a + b + c);
+
     assertEquals("abc", getCompleted(future));
   }
 
   @Test
-  public void testCombine3Fails() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine3(
+  public void combine3_exceptional() throws Exception {
+    final CompletionStage<String> future = combine3(
         completedFuture("a"), completedFuture("b"),
         exceptionallyCompletedFuture(new IllegalStateException()),
         (a, b, c) -> a + b + c);
@@ -366,17 +391,18 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testCombine4() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine4(
+  public void combine4_completed() throws Exception {
+    final CompletionStage<String> future = combine4(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         (a, b, c, d) -> a + b + c + d);
+
     assertEquals("abcd", getCompleted(future));
   }
 
   @Test
-  public void testCombine4Fails() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine4(
+  public void combine4_exceptional() throws Exception {
+    final CompletionStage<String> future = combine4(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         exceptionallyCompletedFuture(new IllegalStateException()),
             (a, b, c, d)-> a + b + c + d);
@@ -386,17 +412,18 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testCombine5() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine5(
+  public void combine5_completed() throws Exception {
+    final CompletionStage<String> future = combine5(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"), completedFuture("e"),
         (a, b, c, d, e) -> a + b + c + d + e);
+
     assertEquals("abcde", getCompleted(future));
   }
 
   @Test
-  public void testCombine5Fails() throws Exception {
-    CompletionStage<String> future = CompletableFutures.combine5(
+  public void combine5_exceptional() throws Exception {
+    final CompletionStage<String> future = combine5(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         exceptionallyCompletedFuture(new IllegalStateException()),
