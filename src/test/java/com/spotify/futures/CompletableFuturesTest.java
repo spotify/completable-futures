@@ -26,6 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
+import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.joinList;
@@ -221,30 +222,29 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testDereferenceFailure() throws Exception {
-    final CompletionStage<Object> future = exceptionallyCompletedFuture(new IllegalArgumentException());
-    final CompletionStage<CompletionStage<Object>> future2 = completedFuture(future);
-    final CompletionStage<Object> dereferenced = CompletableFutures.dereference(future2);
+  public void dereference_completed() throws Exception {
+    final CompletionStage<String> future = completedFuture("hello");
+    final CompletionStage<String> dereferenced = dereference(completedFuture(future));
 
-    exception.expectCause(isA(IllegalArgumentException.class));
+    assertThat(dereferenced, is(future));
+  }
+
+  @Test
+  public void dereference_exceptional() throws Exception {
+    final IllegalArgumentException ex = new IllegalArgumentException();
+    final CompletionStage<Object> future = exceptionallyCompletedFuture(ex);
+    final CompletionStage<Object> dereferenced = dereference(completedFuture(future));
+
+    exception.expectCause(is(ex));
     getCompleted(dereferenced);
   }
 
   @Test
-  public void testDereferenceNull() throws Exception {
-    final CompletionStage<CompletableFuture<Object>> future2 = completedFuture(null);
-    final CompletionStage<Object> dereferenced = CompletableFutures.dereference(future2);
+  public void dereference_null() throws Exception {
+    final CompletionStage<Object> dereferenced = dereference(completedFuture(null));
 
     exception.expectCause(isA(NullPointerException.class));
     getCompleted(dereferenced);
-  }
-
-  @Test
-  public void testDereferenceSuccess() throws Exception {
-    final CompletionStage<String> future = completedFuture("hello");
-    final CompletionStage<CompletionStage<String>> future2 = completedFuture(future);
-    final CompletionStage<String> dereferenced = CompletableFutures.dereference(future2);
-    assertEquals("hello", getCompleted(dereferenced));
   }
 
   @Test
