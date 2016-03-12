@@ -22,12 +22,12 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
+import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
 import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.joinList;
 import static java.util.Arrays.asList;
@@ -248,79 +248,55 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testExceptionallyCompose() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void exceptionallyCompose_complete() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final CompletableFuture<String> fallback = completedFuture("hello");
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future,
-                                                                                     new Function<Throwable, CompletionStage<String>>() {
-                                                                                       @Override
-                                                                                       public CompletionStage<String> apply(
-                                                                                           Throwable throwable) {
-                                                                                         return completedFuture("hello");
-                                                                                       }
-                                                                                     });
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
 
-    assertEquals("hello", getCompleted(composed));
-
+    assertThat(composed, is(fallback));
   }
 
   @Test
-  public void testExceptionallyComposeFailure() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void exceptionallyCompose_exceptional() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final IllegalStateException fallbackException = new IllegalStateException();
+    final CompletableFuture<String> fallback = exceptionallyCompletedFuture(fallbackException);
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future,
-                                                                                     new Function<Throwable, CompletionStage<String>>() {
-                                                                                       @Override
-                                                                                       public CompletionStage<String> apply(
-                                                                                           Throwable throwable) {
-                                                                                         return
-                                                                                             exceptionallyCompletedFuture(
-                                                                                                 new IllegalStateException());
-                                                                                       }
-                                                                                     });
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
 
-    exception.expectCause(isA(IllegalStateException.class));
+    exception.expectCause(is(fallbackException));
     getCompleted(composed);
   }
 
   @Test
-  public void testExceptionallyComposeUnused() throws Exception {
+  public void exceptionallyCompose_unused() throws Exception {
     final CompletionStage<String> future = completedFuture("hello");
+    final IllegalStateException fallbackException = new IllegalStateException();
+    final CompletableFuture<String> fallback = exceptionallyCompletedFuture(fallbackException);
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future, new Function<Throwable, CompletionStage<String>>() {
-      @Override
-      public CompletionStage<String> apply(Throwable throwable) {
-        return exceptionallyCompletedFuture(new IllegalStateException());
-      }
-    });
-    assertEquals("hello", getCompleted(composed));
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
+    assertThat(getCompleted(composed), is("hello"));
   }
 
   @Test
-  public void testExceptionallyComposeThrows() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void exceptionallyCompose_throws() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
+    final IllegalStateException ex = new IllegalStateException();
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future, new Function<Throwable, CompletionStage<String>>() {
-      @Override
-      public CompletionStage<String> apply(Throwable throwable) {
-        throw new IllegalStateException();
-      }
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> {
+      throw ex;
     });
 
-    exception.expectCause(isA(IllegalStateException.class));
+    exception.expectCause(is(ex));
     getCompleted(composed);
   }
 
   @Test
-  public void testExceptionallyComposeReturnsNull() throws Exception {
-    final CompletionStage<String> future = exceptionallyCompletedFuture(new IllegalArgumentException());
+  public void exceptionallyCompose_returnsNull() throws Exception {
+    final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
 
-    final CompletionStage<String> composed = CompletableFutures.exceptionallyCompose(future, new Function<Throwable, CompletionStage<String>>() {
-      @Override
-      public CompletionStage<String> apply(Throwable throwable) {
-        return null;
-      }
-    });
+    final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> null);
 
     exception.expectCause(isA(NullPointerException.class));
     getCompleted(composed);
