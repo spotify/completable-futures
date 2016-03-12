@@ -145,7 +145,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListEmpty() throws Exception {
+  public void joinList_empty() throws Exception {
     final List<String> result = Stream.<CompletableFuture<String>>of()
         .collect(joinList())
         .get();
@@ -155,7 +155,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListOne() throws Exception {
+  public void joinList_one() throws Exception {
     final List<String> result = Stream.of(completedFuture("a"))
         .collect(joinList())
         .get();
@@ -165,9 +165,9 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListTwo() throws Exception {
-    CompletableFuture<String> a = completedFuture("hello");
-    CompletableFuture<String> b = completedFuture("world");
+  public void joinList_two() throws Exception {
+    final CompletableFuture<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = completedFuture("world");
 
     final List<String> result = Stream.of(a, b)
         .collect(joinList())
@@ -176,10 +176,10 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListMixedStages() throws Exception {
+  public void joinList_mixedStageTypes() throws Exception {
     // Note that a and b use different subclasses of CompletionStage
-    CompletionStage<String> a = completedFuture("hello");
-    CompletableFuture<String> b = completedFuture("world");
+    final CompletionStage<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = completedFuture("world");
 
     final List<String> result = Stream.of(a, b)
         .collect(joinList())
@@ -188,10 +188,10 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListMixedTypes() throws Exception {
+  public void joinList_mixedValueTypes() throws Exception {
     // Note that a and b have different result types
-    CompletionStage<Integer> a = completedFuture(3);
-    CompletableFuture<Long> b = completedFuture(4L);
+    final CompletionStage<Integer> a = completedFuture(3);
+    final CompletableFuture<Long> b = completedFuture(4L);
 
     final List<? extends Number> result = Stream.of(a, b)
         .collect(joinList())
@@ -200,11 +200,10 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListExceptional() throws Exception {
+  public void joinList_exceptional() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
-
-    CompletableFuture<String> a = completedFuture("hello");
-    CompletableFuture<String> b = exceptionallyCompletedFuture(ex);
+    final CompletableFuture<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = exceptionallyCompletedFuture(ex);
 
     final CompletableFuture<List<String>> result = Stream.of(a, b).collect(joinList());
 
@@ -213,9 +212,9 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void testJoinListContainsNull() throws Exception {
-    CompletableFuture<String> a = completedFuture("hello");
-    CompletableFuture<String> b = null;
+  public void joinList_containsNull() throws Exception {
+    final CompletableFuture<String> a = completedFuture("hello");
+    final CompletableFuture<String> b = null;
 
     exception.expect(NullPointerException.class);
     Stream.of(a, b).collect(joinList());
