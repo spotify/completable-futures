@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,7 @@ import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.getException;
 import static com.spotify.futures.CompletableFutures.handleCompose;
 import static com.spotify.futures.CompletableFutures.joinList;
+import static com.spotify.futures.CompletableFutures.joinMap;
 import static com.spotify.futures.CompletableFutures.poll;
 import static com.spotify.futures.CompletableFutures.successfulAsList;
 import static java.util.Arrays.asList;
@@ -57,6 +59,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -309,6 +312,89 @@ public class CompletableFuturesTest {
 
     exception.expect(NullPointerException.class);
     stream.collect(joinList());
+  }
+
+  @Test
+  public void joinMap_empty() throws Exception {
+    final Map<String, String> result = Stream.<String>of()
+        .collect(joinMap(CompletableFuture::completedFuture))
+        .get();
+
+    assertThat(result, not(nullValue()));
+    assertThat(result.keySet(), hasSize(0));
+  }
+
+  @Test
+  public void joinMap_one() throws Exception {
+    final Map<String, String> result = Stream.of("a")
+        .collect(joinMap(CompletableFuture::completedFuture))
+        .get();
+
+    assertThat(result.keySet(), hasSize(1));
+    assertThat(result, hasEntry("a", "a"));
+  }
+
+  @Test
+  public void joinMap_two() throws Exception {
+    final Map<String, String> result = Stream.of("a", "b", "c")
+        .collect(joinMap(CompletableFuture::completedFuture))
+        .get();
+
+    assertThat(result.keySet(), hasSize(3));
+    assertThat(result, hasEntry("a", "a"));
+    assertThat(result, hasEntry("b", "b"));
+    assertThat(result, hasEntry("c", "c"));
+  }
+
+  @Test
+  public void joinMap_duplicateKey() throws Exception {
+    final Map<String, String> result = Stream.of("a", "b", "a")
+        .collect(joinMap(CompletableFuture::completedFuture))
+        .get();
+
+    assertThat(result.keySet(), hasSize(2));
+    assertThat(result, hasEntry("a", "a"));
+    assertThat(result, hasEntry("b", "b"));
+  }
+
+  @Test
+  public void joinMap_changeOutputType() throws Exception {
+    final Map<String, Integer> result = Stream.of("hello")
+        .collect(joinMap(s -> completedFuture(s.hashCode())))
+        .get();
+
+    assertThat(result.keySet(), hasSize(1));
+    assertThat(result, hasEntry("hello", "hello".hashCode()));
+  }
+
+  @Test
+  public void joinMap_throws() throws Exception {
+    final RuntimeException ex = new RuntimeException("boom");
+    final Stream<String> stream = Stream.of("hello", "world");
+
+    exception.expect(is(ex));
+    stream.collect(joinMap(s -> {
+          if ("world".equals(s)) {
+            throw ex;
+          }
+          return completedFuture(s);
+        }));
+  }
+
+  @Test
+  public void joinMap_exceptional() throws Exception {
+    final RuntimeException ex = new RuntimeException("boom");
+
+    final CompletableFuture<Map<String, String>> result = Stream.of("hello", "world")
+        .collect(joinMap(s -> {
+          if ("world".equals(s)) {
+            return exceptionallyCompletedFuture(ex);
+          }
+          return completedFuture(s);
+        }));
+
+    exception.expectCause(is(ex));
+    result.get();
   }
 
   @Test

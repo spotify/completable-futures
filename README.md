@@ -64,6 +64,18 @@ collection.stream()
     .thenApply(this::consumeList)
 ```
 
+#### joinMap
+
+`joinMap` is a stream collector that applies an asynchronous operation to a stream of values and
+collects the results into a map. This is similar to applying an asynchronous operation and using
+`joinList`, but retains the mapping from the original value:
+
+```java
+collection.stream()
+    .collect(joinMap(value -> asyncOperation(value)))
+    .thenApply(map -> interpretResults(map))
+```
+
 #### combine
 
 If you want to combine more than two futures of different types, use the `combine` method:

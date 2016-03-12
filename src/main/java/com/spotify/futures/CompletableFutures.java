@@ -17,7 +17,10 @@ package com.spotify.futures;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
@@ -157,6 +161,39 @@ public final class CompletableFutures {
   }
 
   /**
+   * Apply an asynchronous operation to every entity in a stream, and collect all replies into a
+   * map.
+   *
+   * <p> Usage:
+   *
+   * <pre>{@code
+   *   collection.stream()
+   *      .collect(joinMap(value -> asyncOperation(value)))
+   *      .thenApply(map -> interpretResults(map))
+   * }</pre>
+   *
+   * <p> The generated {@link CompletableFuture} will complete to a map from entity to the result
+   * of the supplied asynchronous opoertaion.  Similar to
+   * {@link CompletableFuture#allOf(CompletableFuture[])}, if any of the map operations complete
+   * exceptionally, then the returned CompletableFuture also does so, with a
+   * {@link CompletionException} holding this exception as its cause.
+   *
+   * @param <K> the key type in the output map
+   * @param <V> the value type in the output map
+   * @return a new {@link CompletableFuture} according to the rules outlined in the method
+   * description
+   * @since 0.3.3
+   */
+  public static <K, V> Collector<K, ?, CompletableFuture<Map<K, V>>> joinMap(
+      final Function<? super K, CompletionStage<V>> func) {
+    return collectingAndThen(toList(), keys ->
+        keys.stream()
+            .map(func)
+            .collect(joinList())
+            .thenApply(values -> zip(keys, values)));
+  }
+
+  /**
    * Checks that a stage is completed.
    *
    * @param stage the {@link CompletionStage} to check
@@ -270,7 +307,7 @@ public final class CompletableFutures {
    */
   public static <T> CompletionStage<T> dereference(
       CompletionStage<? extends CompletionStage<T>> stage) {
-    return stage.thenCompose(Function.identity());
+    return stage.thenCompose(identity());
   }
 
   private static <T> CompletionStage<CompletionStage<T>> wrap(CompletionStage<T> future) {
@@ -634,6 +671,17 @@ public final class CompletableFutures {
     } catch (Exception ex) {
       resultFuture.completeExceptionally(ex);
     }
+  }
+
+  private static <K, V> Map<K, V> zip(final List<K> keys, final List<V> values) {
+    final Iterator<K> keysIter = keys.iterator();
+    final Iterator<V> valuesIter = values.iterator();
+
+    final Map<K, V> result = new HashMap<>(keys.size());
+    while (keysIter.hasNext()) {
+      result.put(keysIter.next(), valuesIter.next());
+    }
+    return result;
   }
 
 }
