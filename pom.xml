@@ -59,6 +59,17 @@
       </roles>
       <timezone>+1</timezone>
     </developer>
+    <developer>
+      <id>dflemstr</id>
+      <name>David Flemström</name>
+      <email>dflemstr@spotify.com</email>
+      <organization>Spotify AB</organization>
+      <organizationUrl>http://www.spotify.com</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+      <timezone>+1</timezone>
+    </developer>
   </developers>
 
   <dependencies>
