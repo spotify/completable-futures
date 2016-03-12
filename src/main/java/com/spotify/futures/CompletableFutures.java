@@ -196,7 +196,7 @@ public final class CompletableFutures {
 
   public static <R, A, B, C> CompletionStage<R> combine3(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
-      Function3<R, A, B, C> function) {
+      Function3<A, B, C, R> function) {
     final CompletableFuture<A> af = a.toCompletableFuture();
     final CompletableFuture<B> bf = b.toCompletableFuture();
     final CompletableFuture<C> cf = c.toCompletableFuture();
@@ -207,7 +207,7 @@ public final class CompletableFutures {
 
   public static <R, A, B, C, D> CompletionStage<R> combine4(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c, CompletionStage<D> d,
-      Function4<R, A, B, C, D> function) {
+      Function4<A, B, C, D, R> function) {
     final CompletableFuture<A> af = a.toCompletableFuture();
     final CompletableFuture<B> bf = b.toCompletableFuture();
     final CompletableFuture<C> cf = c.toCompletableFuture();
@@ -220,7 +220,7 @@ public final class CompletableFutures {
   public static <R, A, B, C, D, E> CompletionStage<R> combine5(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
       CompletionStage<D> d, CompletionStage<E> e,
-      Function5<R, A, B, C, D, E> function) {
+      Function5<A, B, C, D, E, R> function) {
     final CompletableFuture<A> af = a.toCompletableFuture();
     final CompletableFuture<B> bf = b.toCompletableFuture();
     final CompletableFuture<C> cf = c.toCompletableFuture();

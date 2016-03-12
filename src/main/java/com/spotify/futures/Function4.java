@@ -34,7 +34,7 @@ import java.util.function.Function;
  * @see Function
  */
 @FunctionalInterface
-public interface Function4<R, A, B, C, D> {
+public interface Function4<A, B, C, D, R> {
 
     /**
      * Applies this function to the given arguments.
@@ -60,7 +60,7 @@ public interface Function4<R, A, B, C, D> {
      * applies the {@code after} function
      * @throws NullPointerException if after is null
      */
-    default <V> Function4<V, A, B, C, D> andThen(Function<? super R, ? extends V> after) {
+    default <V> Function4<A, B, C, D, V> andThen(Function<? super R, ? extends V> after) {
         Objects.requireNonNull(after);
         return (A a, B b, C c, D d) -> after.apply(apply(a, b, c, d));
     }
