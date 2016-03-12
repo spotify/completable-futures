@@ -168,6 +168,30 @@ public class CompletableFuturesTest {
   }
 
   @Test
+  public void testJoinAllMixedStages() throws Exception {
+    // Note that a and b use different subclasses of CompletionStage
+    CompletionStage<String> a = completedFuture("hello");
+    CompletableFuture<String> b = completedFuture("world");
+
+    final List<String> result = Stream.of(a, b)
+        .collect(joinAll())
+        .get();
+    assertThat(result, contains("hello", "world"));
+  }
+
+  @Test
+  public void testJoinAllMixedTypes() throws Exception {
+    // Note that a and b have different result types
+    CompletionStage<Integer> a = completedFuture(3);
+    CompletableFuture<Long> b = completedFuture(4L);
+
+    final List<? extends Number> result = Stream.of(a, b)
+        .collect(joinAll())
+        .get();
+    assertThat(result, contains(3, 4L));
+  }
+
+  @Test
   public void testJoinAllExceptional() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
 
