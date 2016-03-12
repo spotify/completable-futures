@@ -194,6 +194,12 @@ public final class CompletableFutures {
     return future.thenApply(CompletableFuture::completedFuture);
   }
 
+  public static <R, A, B> CompletionStage<R> combine2(
+      CompletionStage<A> a, CompletionStage<B> b,
+      BiFunction<A, B, R> function) {
+    return a.thenCombine(b, function);
+  }
+
   public static <R, A, B, C> CompletionStage<R> combine3(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
       Function3<A, B, C, R> function) {
