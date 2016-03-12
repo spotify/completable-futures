@@ -194,13 +194,13 @@ public final class CompletableFutures {
     return future.thenApply(CompletableFuture::completedFuture);
   }
 
-  public static <R, A, B> CompletionStage<R> combine2(
+  public static <R, A, B> CompletionStage<R> combine(
       CompletionStage<A> a, CompletionStage<B> b,
       BiFunction<A, B, R> function) {
     return a.thenCombine(b, function);
   }
 
-  public static <R, A, B, C> CompletionStage<R> combine3(
+  public static <R, A, B, C> CompletionStage<R> combine(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
       Function3<A, B, C, R> function) {
     final CompletableFuture<A> af = a.toCompletableFuture();
@@ -211,7 +211,7 @@ public final class CompletableFutures {
         .thenApply(ignored -> function.apply(af.join(), bf.join(), cf.join()));
   }
 
-  public static <R, A, B, C, D> CompletionStage<R> combine4(
+  public static <R, A, B, C, D> CompletionStage<R> combine(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c, CompletionStage<D> d,
       Function4<A, B, C, D, R> function) {
     final CompletableFuture<A> af = a.toCompletableFuture();
@@ -223,7 +223,7 @@ public final class CompletableFutures {
         .thenApply(ignored -> function.apply(af.join(), bf.join(), cf.join(), df.join()));
   }
 
-  public static <R, A, B, C, D, E> CompletionStage<R> combine5(
+  public static <R, A, B, C, D, E> CompletionStage<R> combine(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
       CompletionStage<D> d, CompletionStage<E> e,
       Function5<A, B, C, D, E, R> function) {

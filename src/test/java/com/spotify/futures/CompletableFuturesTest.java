@@ -25,10 +25,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
-import static com.spotify.futures.CompletableFutures.combine2;
-import static com.spotify.futures.CompletableFutures.combine3;
-import static com.spotify.futures.CompletableFutures.combine4;
-import static com.spotify.futures.CompletableFutures.combine5;
+import static com.spotify.futures.CompletableFutures.combine;
 import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
@@ -352,7 +349,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine2_completed() throws Exception {
-    final CompletionStage<String> future = combine2(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"),
         (a, b) -> a + b);
 
@@ -361,7 +358,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine2_exceptional() throws Exception {
-    final CompletionStage<String> future = combine2(
+    final CompletionStage<String> future = combine(
         completedFuture("a"),
         exceptionallyCompletedFuture(new IllegalStateException()),
         (a, b) -> a + b);
@@ -372,7 +369,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine3_completed() throws Exception {
-    final CompletionStage<String> future = combine3(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         (a, b, c) -> a + b + c);
 
@@ -381,7 +378,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine3_exceptional() throws Exception {
-    final CompletionStage<String> future = combine3(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"),
         exceptionallyCompletedFuture(new IllegalStateException()),
         (a, b, c) -> a + b + c);
@@ -392,7 +389,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine4_completed() throws Exception {
-    final CompletionStage<String> future = combine4(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         (a, b, c, d) -> a + b + c + d);
@@ -402,7 +399,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine4_exceptional() throws Exception {
-    final CompletionStage<String> future = combine4(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         exceptionallyCompletedFuture(new IllegalStateException()),
             (a, b, c, d)-> a + b + c + d);
@@ -413,7 +410,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine5_completed() throws Exception {
-    final CompletionStage<String> future = combine5(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"), completedFuture("e"),
         (a, b, c, d, e) -> a + b + c + d + e);
@@ -423,7 +420,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void combine5_exceptional() throws Exception {
-    final CompletionStage<String> future = combine5(
+    final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         exceptionallyCompletedFuture(new IllegalStateException()),
