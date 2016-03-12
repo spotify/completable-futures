@@ -57,15 +57,16 @@ collection.stream()
     .thenApply(this::consumeList)
 ```
 
-#### combineN
+#### combine
 
 The builtin API includes `future.thenCombine(otherFuture, function)` but if you want to combine
 more than two things it gets trickier. To help out with that, you can use:
 
 ```java
-CompletableFutures.combine3(f1, f2, f3, (a, b, c) -> a + b + c);
-CompletableFutures.combine4(f1, f2, f3, f4, (a, b, c, d) -> a + b + c + d);
-CompletableFutures.combine5(f1, f2, f3, f4, f5, (a, b, c, d, e) -> a + b + c + d + e);
+CompletableFutures.combine(f1, f2, (a, b) -> a + b);
+CompletableFutures.combine(f1, f2, f3, (a, b, c) -> a + b + c);
+CompletableFutures.combine(f1, f2, f3, f4, (a, b, c, d) -> a + b + c + d);
+CompletableFutures.combine(f1, f2, f3, f4, f5, (a, b, c, d, e) -> a + b + c + d + e);
 ```
 
 ### Missing parts of the CompletableFuture API
