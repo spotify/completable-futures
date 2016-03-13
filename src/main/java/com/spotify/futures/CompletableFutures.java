@@ -17,9 +17,7 @@ package com.spotify.futures;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -121,8 +119,6 @@ public final class CompletableFutures {
    * @param stage a completed {@link CompletionStage}.
    * @return the value of the stage if it has one.
    * @throws IllegalStateException if the stage is not completed.
-   * @throws CancellationException if the stage was cancelled
-   * @throws CompletionException if the stage completed exceptionally
    */
   public static <T> T getCompleted(CompletionStage<T> stage) {
     CompletableFuture<T> future = stage.toCompletableFuture();
