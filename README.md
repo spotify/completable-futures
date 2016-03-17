@@ -1,7 +1,7 @@
-## java8-futures-extra
+## completable-futures
 
-java8-futures-extra is a set of small utility functions to simplify working with
-asynchronous code in Java8.
+completable-futures is a set of small utility functions to simplify working with asynchronous code
+in Java8.
 
 ### Build dependencies
 * Java 8 or higher
@@ -14,14 +14,16 @@ asynchronous code in Java8.
 
 #### Import
 
-java8-futures-extra is meant to be used as a library in other software.
-To import it with maven, use this:
+completable-futures is meant to be used as a library in other software. To import it with maven,
+use this:
 
-    <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>java8-futures-extra</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
+```xml
+<dependency>
+    <groupId>com.spotify</groupId>
+    <artifactId>completable-futures</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
 
 ### exceptionallyCompletedFuture
 
@@ -57,8 +59,9 @@ collection.stream()
 
 #### combineN
 
-The builtin API includes `future.thenCombine(otherFuture, function)` but if you want to combine more than two things it gets trickier.
-To help out with that, you can use:
+The builtin API includes `future.thenCombine(otherFuture, function)` but if you want to combine
+more than two things it gets trickier. To help out with that, you can use:
+
 ```java
 CompletableFutures.combine3(f1, f2, f3, (a, b, c) -> a + b + c);
 CompletableFutures.combine4(f1, f2, f3, f4, (a, b, c, d) -> a + b + c + d);
@@ -67,9 +70,9 @@ CompletableFutures.combine5(f1, f2, f3, f4, f5, (a, b, c, d, e) -> a + b + c + d
 
 ### Missing parts of the CompletableFuture API
 
-The CompletableFutures class includes utility functions for operating on futures that is missing from the builtin API.
+The CompletableFutures class includes utility functions for operating on futures that is missing
+from the builtin API.
 
 * `dereference` - unwrap a `CompletionStage<CompletionStage<T>>` to a plain `CompletionStage<T>`.
 * `exceptionallyCompose` - like `CompletableFuture.exceptionally` but lets you return a new CompletionStage instead of a direct value
 * `handleCompose` - like `CompletableFuture.handle` but lets you return a new CompletionStage instead of a direct value
-* `exceptionallyCompletedFuture` - like `CompletableFuture.completedFuture` but lets you create an exceptional future instead

@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>java8-futures-extra</name>
+  <name>completable-futures</name>
 
   <groupId>com.spotify</groupId>
-  <artifactId>java8-futures-extra</artifactId>
+  <artifactId>completable-futures</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -16,10 +16,10 @@
   </properties>
 
   <scm>
-    <connection>scm:git:https://github.com/spotify/java8-futures-extra.git</connection>
-    <developerConnection>scm:git:git@github.com:spotify/java8-futures-extra.git
+    <connection>scm:git:https://github.com/spotify/completable-futures.git</connection>
+    <developerConnection>scm:git:git@github.com:spotify/completable-futures.git
     </developerConnection>
-    <url>scm:https://github.com/spotify/java8-futures-extra/</url>
+    <url>scm:https://github.com/spotify/completable-futures/</url>
   </scm>
 
   <licenses>
