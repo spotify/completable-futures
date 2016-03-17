@@ -23,6 +23,7 @@ import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
@@ -46,29 +47,28 @@ public class AllAsListBenchmark {
 
   @State(Scope.Benchmark)
   public static class Input {
-    @Param({
-        "4",
-        "16",
-        "64",
-        "256",
-        "1024"
-    }) int inputSize;
 
-    public List<CompletionStage<String>> stages() {
-      return Collections.nCopies(inputSize, completedFuture("hello"));
+    @Param({"4", "16", "64", "256", "1024"})
+    int inputSize;
+
+    List<CompletionStage<String>> stages;
+
+    @Setup
+    public void setup() {
+      stages = Collections.nCopies(inputSize, completedFuture("hello"));
     }
   }
 
   @Benchmark
   public void actual(final Input input) throws Exception {
-    final List<CompletionStage<String>> stages = input.stages();
+    final List<CompletionStage<String>> stages = input.stages;
     final CompletableFuture<List<String>> future = CompletableFutures.allAsList(stages);
     future.get();
   }
 
   @Benchmark
   public void stream(final Input input) throws Exception {
-    final List<CompletionStage<String>> stages = input.stages();
+    final List<CompletionStage<String>> stages = input.stages;
 
     @SuppressWarnings("unchecked") // generic array creation
     final CompletableFuture<String>[] all = stages.stream()
@@ -84,7 +84,7 @@ public class AllAsListBenchmark {
 
   @Benchmark
   public void instantiateAndFor(final Input input) throws Exception {
-    final List<CompletionStage<String>> stages = input.stages();
+    final List<CompletionStage<String>> stages = input.stages;
 
     @SuppressWarnings("unchecked") // generic array creation
     final CompletableFuture<String>[] all = new CompletableFuture[stages.size()];
@@ -105,7 +105,7 @@ public class AllAsListBenchmark {
 
   @Benchmark
   public void instantiateAndForeach(final Input input) throws Exception {
-    final List<CompletionStage<String>> stages = input.stages();
+    final List<CompletionStage<String>> stages = input.stages;
 
     @SuppressWarnings("unchecked") // generic array creation
     final CompletableFuture<String>[] all = new CompletableFuture[stages.size()];
