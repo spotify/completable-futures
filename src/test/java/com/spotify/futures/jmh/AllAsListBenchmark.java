@@ -60,14 +60,14 @@ public class AllAsListBenchmark {
   }
 
   @Benchmark
-  public void actual(final Input input) throws Exception {
+  public List<String> actual(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages;
     final CompletableFuture<List<String>> future = CompletableFutures.allAsList(stages);
-    future.get();
+    return future.get();
   }
 
   @Benchmark
-  public void stream(final Input input) throws Exception {
+  public List<String> stream(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages;
 
     @SuppressWarnings("unchecked") // generic array creation
@@ -79,11 +79,11 @@ public class AllAsListBenchmark {
             .map(CompletableFuture::join)
             .collect(toList()));
 
-    future.get();
+    return future.get();
   }
 
   @Benchmark
-  public void instantiateAndFor(final Input input) throws Exception {
+  public List<String> instantiateAndFor(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages;
 
     @SuppressWarnings("unchecked") // generic array creation
@@ -100,11 +100,11 @@ public class AllAsListBenchmark {
           return result;
         });
 
-    future.get();
+    return future.get();
   }
 
   @Benchmark
-  public void instantiateAndForeach(final Input input) throws Exception {
+  public List<String> instantiateAndForeach(final Input input) throws Exception {
     final List<CompletionStage<String>> stages = input.stages;
 
     @SuppressWarnings("unchecked") // generic array creation
@@ -122,7 +122,7 @@ public class AllAsListBenchmark {
           return result;
         });
 
-    future.get();
+    return future.get();
   }
 
   public static void main(String[] args) throws Exception {
