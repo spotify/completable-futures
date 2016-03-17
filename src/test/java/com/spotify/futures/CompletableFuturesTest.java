@@ -231,7 +231,7 @@ public class CompletableFuturesTest {
     final CompletionStage<String> future = completedFuture("hello");
     final CompletionStage<String> dereferenced = dereference(completedFuture(future));
 
-    assertThat(dereferenced, is(future));
+    assertThat(dereferenced.toCompletableFuture().join(), is("hello"));
   }
 
   @Test
@@ -259,7 +259,7 @@ public class CompletableFuturesTest {
 
     final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
 
-    assertThat(composed, is(fallback));
+    assertThat(composed.toCompletableFuture().join(), is("hello"));
   }
 
   @Test
