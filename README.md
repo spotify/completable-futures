@@ -1,4 +1,4 @@
-# completable-futures
+# completable-futures [![Build Status](https://travis-ci.org/spotify/completable-futures.svg?branch=master)](https://travis-ci.org/spotify/completable-futures) [![Maven Central](https://img.shields.io/maven-central/v/com.spotify/completable-futures.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.spotify%22%20AND%20a%3A%22completable-futures%22) [![License](https://img.shields.io/github/license/spotify/completable-futures.svg)](LICENCE)
 
 completable-futures is a set of small utility functions to simplify working with asynchronous code
 in Java8.
