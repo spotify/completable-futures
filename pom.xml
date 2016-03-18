@@ -4,7 +4,7 @@
 
   <groupId>com.spotify</groupId>
   <artifactId>completable-futures</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0-SNAPSHOT</version>
 
   <name>completable-futures</name>
   <description>Convenience utilities for working with asynchronous Java 8</description>
@@ -17,7 +17,7 @@
   <scm>
     <connection>scm:git:https://github.com/spotify/completable-futures.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/spotify/completable-futures.git</developerConnection>
-    <tag>v0.1.0</tag>
+    <tag>HEAD</tag>
     <url>scm:https://github.com/spotify/completable-futures</url>
   </scm>
 
