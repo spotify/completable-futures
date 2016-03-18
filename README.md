@@ -1,18 +1,16 @@
-## completable-futures
+# completable-futures
 
 completable-futures is a set of small utility functions to simplify working with asynchronous code
 in Java8.
 
-### Build dependencies
+#### Build dependencies
 * Java 8 or higher
 * Maven
 
-### Runtime dependencies
+#### Runtime dependencies
 * Java 8 or higher
 
-### Usage
-
-#### Import
+### Import
 
 completable-futures is meant to be used as a library in other software. To import it with maven,
 use this:
@@ -23,15 +21,6 @@ use this:
     <artifactId>completable-futures</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
-```
-
-### exceptionallyCompletedFuture
-
-Creates a new {@code CompletableFuture} that is already exceptionally completed with the given
-exception:
-
-```java
-return CompletableFutures.exceptionallyCompletedFuture(new RuntimeException("boom"));
 ```
 
 ### Combining more than two things
@@ -76,3 +65,17 @@ from the builtin API.
 * `dereference` - unwrap a `CompletionStage<CompletionStage<T>>` to a plain `CompletionStage<T>`.
 * `exceptionallyCompose` - like `CompletableFuture.exceptionally` but lets you return a new CompletionStage instead of a direct value
 * `handleCompose` - like `CompletableFuture.handle` but lets you return a new CompletionStage instead of a direct value
+* `exceptionallyCompletedFuture` - Creates a new {@code CompletableFuture} that is already exceptionally completed with the given
+exception
+
+## License
+
+Copyright 2016 Spotify AB.
+
+Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+
+## Code of Conduct
+
+This project adheres to the [Open Code of Conduct][code-of-conduct]. By participating, you are expected to honor this code.
+
+[code-of-conduct]: https://github.com/spotify/code-of-conduct/blob/master/code-of-conduct.md
