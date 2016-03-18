@@ -237,4 +237,8 @@ public final class CompletableFutures {
         .thenApply(ignored ->
                        function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));
   }
+
+  public static CompletionStage<JoinedResults> join(CompletableFuture<?>... futures) {
+    return JoinedResults.from(futures);
+  }
 }
