@@ -219,7 +219,7 @@ public final class CompletableFutures {
     final CompletableFuture<C> cf = c.toCompletableFuture();
     final CompletableFuture<D> df = d.toCompletableFuture();
 
-    return CompletableFuture.allOf(af, bf, cf)
+    return CompletableFuture.allOf(af, bf, cf, df)
         .thenApply(ignored -> function.apply(af.join(), bf.join(), cf.join(), df.join()));
   }
 
@@ -233,7 +233,7 @@ public final class CompletableFutures {
     final CompletableFuture<D> df = d.toCompletableFuture();
     final CompletableFuture<E> ef = e.toCompletableFuture();
 
-    return CompletableFuture.allOf(af, bf, cf)
+    return CompletableFuture.allOf(af, bf, cf, df, ef)
         .thenApply(ignored ->
                        function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));
   }

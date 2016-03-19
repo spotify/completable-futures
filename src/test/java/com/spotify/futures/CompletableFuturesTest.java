@@ -409,6 +409,16 @@ public class CompletableFuturesTest {
   }
 
   @Test
+  public void combine4_incomplete() throws Exception {
+    final CompletionStage<String> future = combine(
+        completedFuture("a"), completedFuture("b"), completedFuture("c"),
+        incompleteFuture(),
+            (a, b, c, d) -> a + b + c + d);
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
   public void combine5_completed() throws Exception {
     final CompletionStage<String> future = combine(
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
@@ -428,5 +438,20 @@ public class CompletableFuturesTest {
 
     exception.expectCause(isA(IllegalStateException.class));
     getCompleted(future);
+  }
+
+  @Test
+  public void combine5_incomplete() throws Exception {
+    final CompletionStage<String> future = combine(
+        completedFuture("a"), completedFuture("b"), completedFuture("c"),
+        completedFuture("d"),
+        incompleteFuture(),
+            (a, b, c, d, e) -> a + b + c + d + e);
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  private static <T> CompletableFuture<T> incompleteFuture() {
+    return new CompletableFuture<>();
   }
 }
