@@ -15,6 +15,8 @@
  */
 package com.spotify.futures;
 
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -22,6 +24,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
@@ -43,7 +46,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class CompletableFuturesTest {
@@ -54,14 +56,14 @@ public class CompletableFuturesTest {
   @Test
   public void allAsList_empty() throws Exception {
     final List<CompletionStage<String>> input = emptyList();
-    assertThat(allAsList(input).get(), is(emptyList()));
+    assertThat(allAsList(input), completesTo(emptyList()));
   }
 
   @Test
   public void allAsList_one() throws Exception {
     final String value = "a";
     final List<CompletionStage<String>> input = singletonList(completedFuture(value));
-    assertThat(allAsList(input).get(), is(singletonList(value)));
+    assertThat(allAsList(input), completesTo(singletonList(value)));
   }
 
   @Test
@@ -70,7 +72,7 @@ public class CompletableFuturesTest {
     final List<CompletableFuture<String>> input = values.stream()
         .map(CompletableFuture::completedFuture)
         .collect(toList());
-    assertThat(allAsList(input).get(), is(values));
+    assertThat(allAsList(input), completesTo(values));
   }
 
   @Test
@@ -107,7 +109,7 @@ public class CompletableFuturesTest {
   @Test
   public void getCompleted_done() throws Exception {
     final CompletionStage<String> future = completedFuture("hello");
-    assertEquals("hello", getCompleted(future));
+    assertThat(getCompleted(future), is("hello"));
   }
 
   @Test
@@ -218,9 +220,10 @@ public class CompletableFuturesTest {
   public void joinList_containsNull() throws Exception {
     final CompletableFuture<String> a = completedFuture("hello");
     final CompletableFuture<String> b = null;
+    final Stream<CompletableFuture<String>> stream = Stream.of(a, b);
 
     exception.expect(NullPointerException.class);
-    Stream.of(a, b).collect(joinList());
+    stream.collect(joinList());
   }
 
   @Test
@@ -228,7 +231,7 @@ public class CompletableFuturesTest {
     final CompletionStage<String> future = completedFuture("hello");
     final CompletionStage<String> dereferenced = dereference(completedFuture(future));
 
-    assertThat(dereferenced.toCompletableFuture().join(), is("hello"));
+    assertThat(dereferenced, completesTo("hello"));
   }
 
   @Test
@@ -256,7 +259,7 @@ public class CompletableFuturesTest {
 
     final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
 
-    assertThat(composed.toCompletableFuture().join(), is("hello"));
+    assertThat(composed, completesTo("hello"));
   }
 
   @Test
@@ -278,7 +281,7 @@ public class CompletableFuturesTest {
     final CompletableFuture<String> fallback = exceptionallyCompletedFuture(fallbackException);
 
     final CompletionStage<String> composed = exceptionallyCompose(future, throwable -> fallback);
-    assertThat(getCompleted(composed), is("hello"));
+    assertThat(composed, completesTo("hello"));
   }
 
   @Test
@@ -311,8 +314,7 @@ public class CompletableFuturesTest {
     final CompletionStage<String> composed =
         handleCompose(future, (s, t) -> completedFuture("hello"));
 
-    assertEquals("hello", getCompleted(composed));
-
+    assertThat(composed, completesTo("hello"));
   }
 
   @Test
@@ -353,7 +355,7 @@ public class CompletableFuturesTest {
         completedFuture("a"), completedFuture("b"),
         (a, b) -> a + b);
 
-    assertEquals("ab", getCompleted(future));
+    assertThat(future, completesTo("ab"));
   }
 
   @Test
@@ -373,7 +375,7 @@ public class CompletableFuturesTest {
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         (a, b, c) -> a + b + c);
 
-    assertEquals("abc", getCompleted(future));
+    assertThat(future, completesTo("abc"));
   }
 
   @Test
@@ -394,7 +396,7 @@ public class CompletableFuturesTest {
         completedFuture("d"),
         (a, b, c, d) -> a + b + c + d);
 
-    assertEquals("abcd", getCompleted(future));
+    assertThat(future, completesTo("abcd"));
   }
 
   @Test
@@ -425,7 +427,7 @@ public class CompletableFuturesTest {
         completedFuture("d"), completedFuture("e"),
         (a, b, c, d, e) -> a + b + c + d + e);
 
-    assertEquals("abcde", getCompleted(future));
+    assertThat(future, completesTo("abcde"));
   }
 
   @Test
@@ -454,4 +456,23 @@ public class CompletableFuturesTest {
   private static <T> CompletableFuture<T> incompleteFuture() {
     return new CompletableFuture<>();
   }
+
+  private static <T> Matcher<CompletionStage<T>> completesTo(final T expected) {
+    return completesTo(is(expected));
+  }
+
+  private static <T> Matcher<CompletionStage<T>> completesTo(final Matcher<T> expected) {
+    return new CustomTypeSafeMatcher<CompletionStage<T>>("completes to " + String.valueOf(expected)) {
+      @Override
+      protected boolean matchesSafely(CompletionStage<T> item) {
+        try {
+          final T value = item.toCompletableFuture().get(1, TimeUnit.SECONDS);
+          return expected.matches(value);
+        } catch (Exception ex) {
+          return false;
+        }
+      }
+    };
+  }
+
 }
