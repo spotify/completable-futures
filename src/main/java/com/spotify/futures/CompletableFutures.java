@@ -29,7 +29,7 @@ import static java.util.stream.Collectors.toList;
 public final class CompletableFutures {
 
   private CompletableFutures() {
-    throw new AssertionError();
+    throw new IllegalAccessError("This class must not be instantiated.");
   }
 
   /**

@@ -21,6 +21,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -40,7 +42,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
@@ -451,6 +455,16 @@ public class CompletableFuturesTest {
             (a, b, c, d, e) -> a + b + c + d + e);
     exception.expect(isA(IllegalStateException.class));
     getCompleted(future);
+  }
+
+  @Test
+  public void ctor_preventInstantiation() throws Exception {
+    exception.expect(both(isA(InvocationTargetException.class))
+                         .and(hasProperty("cause", isA(IllegalAccessError.class))));
+
+    final Constructor<CompletableFutures> ctor = CompletableFutures.class.getDeclaredConstructor();
+    ctor.setAccessible(true);
+    ctor.newInstance();
   }
 
   private static <T> CompletableFuture<T> incompleteFuture() {
