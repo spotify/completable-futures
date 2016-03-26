@@ -1,7 +1,7 @@
 # completable-futures
 [![Build Status](https://img.shields.io/travis/spotify/completable-futures/master.svg)](https://travis-ci.org/spotify/completable-futures)
 [![Test Coverage](https://img.shields.io/codecov/c/github/spotify/completable-futures/master.svg)](https://codecov.io/github/spotify/completable-futures?branch=master)
-[![Maven Central](https://img.shields.io/maven-central/v/com.spotify/completable-futures.svg)](https://maven-badges.herokuapp.com/maven-central/com.spotify/completable-futures])
+[![Maven Central](https://img.shields.io/maven-central/v/com.spotify/completable-futures.svg)](https://maven-badges.herokuapp.com/maven-central/com.spotify/completable-futures)
 [![License](https://img.shields.io/github/license/spotify/completable-futures.svg)](LICENSE)
 
 completable-futures is a set of utility functions to simplify working with asynchronous code in
