@@ -29,7 +29,7 @@ import static java.util.stream.Collectors.toList;
 public final class CompletableFutures {
 
   private CompletableFutures() {
-    throw new AssertionError();
+    // suppress constructor for utility class
   }
 
   /**
