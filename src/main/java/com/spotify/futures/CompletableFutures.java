@@ -82,6 +82,30 @@ public final class CompletableFutures {
   }
 
   /**
+   * Returns a new {@link CompletableFuture} which completes to a list of values of those input
+   * stages that succeeded. The list of results is in the same order as the input stages. For failed
+   * stages, the defaultValueMapper will be called, and the value returned from that function will
+   * be put in the resulting list.
+   *
+   * <p>If no stages are provided, returns a future holding an empty list.
+   *
+   * @param stages the stages to combine.
+   * @param defaultValueMapper a function that will be called when a future completes exceptionally
+   * to provide a default value to place in the resulting list
+   * @param <T>    the common type of all of the input stages, that determines the type of the
+   *               output future
+   * @return a future that completes to a list of the results of the supplied stages
+   * @throws NullPointerException if the stages list or any of its elements are {@code null}
+   */
+  public static <T> CompletableFuture<List<T>> successfulAsList(
+      List<? extends CompletionStage<T>> stages,
+      Function<Throwable, ? extends T> defaultValueMapper) {
+    return stages.stream()
+        .map(f -> f.exceptionally(defaultValueMapper))
+        .collect(joinList());
+  }
+
+  /**
    * Returns a new {@code CompletableFuture} that is already exceptionally completed with
    * the given exception.
    *

@@ -44,6 +44,7 @@ import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.handleCompose;
 import static com.spotify.futures.CompletableFutures.joinList;
 import static com.spotify.futures.CompletableFutures.poll;
+import static com.spotify.futures.CompletableFutures.successfulAsList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -130,6 +131,18 @@ public class CompletableFuturesTest {
 
     exception.expect(NullPointerException.class);
     allAsList(input);
+  }
+
+  @Test
+  public void successfulAsList_exceptionalAndNull() throws Exception {
+    final List<CompletableFuture<String>> input = asList(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(new RuntimeException("boom")),
+        completedFuture(null),
+        completedFuture("d")
+    );
+    final List<String> expected = asList("a", "default", null, "d");
+    assertThat(successfulAsList(input, t -> "default"), completesTo(expected));
   }
 
   @Test
