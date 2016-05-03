@@ -17,6 +17,8 @@ package com.spotify.futures;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -24,9 +26,14 @@ import org.junit.rules.ExpectedException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
@@ -41,6 +48,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
@@ -51,11 +60,29 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CompletableFuturesTest {
 
+  private ScheduledExecutorService executor ;
+
   @Rule
   public ExpectedException exception = ExpectedException.none();
+
+  @Before
+  public void setUp() {
+    executor = Executors.newScheduledThreadPool(1);
+  }
+
+  @After
+  public void tearDown() {
+    executor.shutdownNow();
+  }
 
   @Test
   public void allAsList_empty() throws Exception {
@@ -467,6 +494,75 @@ public class CompletableFuturesTest {
     ctor.newInstance();
   }
 
+  @Test
+  public void poll_done() throws Exception {
+    final CompletableFuture<String> future = CompletableFutures.poll(
+        () -> Optional.of("done"),
+        2, MILLISECONDS, executor);
+    assertThat(future, completesTo("done"));
+  }
+
+  private static class ExternalTask {
+    private final AtomicInteger calls = new AtomicInteger(0);
+    public Optional<String> done() {
+      return calls.getAndIncrement() > 1 ? Optional.of("done") : Optional.empty();
+    }
+  }
+
+  @Test
+  public void poll_twice() throws Exception {
+    final ExternalTask task = new ExternalTask();
+    final CompletableFuture<String> future =
+        CompletableFutures.poll(task::done, 2, MILLISECONDS, executor);
+    assertThat(future, completesTo("done"));
+  }
+
+  @Test
+  public void poll_taskReturnsNull() throws Exception {
+    final CompletableFuture<String> future = CompletableFutures.poll(
+        () -> null,
+        2, MILLISECONDS, executor);
+
+    exception.expectCause(isA(NullPointerException.class));
+    future.get();
+  }
+
+  @Test
+  public void poll_taskThrows() throws Exception {
+    final RuntimeException ex = new RuntimeException("boom");
+    final CompletableFuture<String> future = CompletableFutures.poll(
+        () -> {throw ex;},
+        2, MILLISECONDS, executor);
+
+    exception.expectCause(is(ex));
+    future.get();
+  }
+
+  @Test
+  public void poll_scheduled() throws Exception {
+    final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+    final Supplier<Optional<String>> supplier = () -> Optional.of("hello");
+
+    CompletableFutures.poll(supplier, 2, MILLISECONDS, executor);
+    verify(executor).scheduleAtFixedRate(any(), eq(0L), eq(2L), eq(MILLISECONDS));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void poll_resultFutureCanceled() throws Exception {
+    final ScheduledFuture scheduledFuture = mock(ScheduledFuture.class);
+    final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+    when(executor.scheduleAtFixedRate(any(), anyLong(), anyLong(), any()))
+        .thenReturn(scheduledFuture);
+
+    final CompletableFuture<String> future = CompletableFutures.poll(
+        Optional::empty,
+        2, MILLISECONDS, executor);
+    future.cancel(true);
+
+    verify(scheduledFuture).cancel(true);
+  }
+
   private static <T> CompletableFuture<T> incompleteFuture() {
     return new CompletableFuture<>();
   }
@@ -480,7 +576,7 @@ public class CompletableFuturesTest {
       @Override
       protected boolean matchesSafely(CompletionStage<T> item) {
         try {
-          final T value = item.toCompletableFuture().get(1, TimeUnit.SECONDS);
+          final T value = item.toCompletableFuture().get(1, SECONDS);
           return expected.matches(value);
         } catch (Exception ex) {
           return false;

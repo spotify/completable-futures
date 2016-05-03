@@ -17,10 +17,15 @@ package com.spotify.futures;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -237,4 +242,41 @@ public final class CompletableFutures {
         .thenApply(ignored ->
                        function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));
   }
+
+  /**
+   * Periodically poll an external resource until it returns a non-empty result.
+   *
+   * The polling task should return Optional.empty() until it becomes available, and then
+   * Optional.of(result).
+   *
+   * If the polling task throws an exception or returns null, that will cause the result future to
+   * complete exceptionally.
+   *
+   * @param pollingTask the polling task.
+   * @param period the polling period.
+   * @param unit the polling time unit.
+   * @param executorService the executor service to schedule the polling task on.
+   * @return a future completing to the result of the polling task once that becomes available.
+   */
+  public static <T> CompletableFuture<T> poll(
+      final Supplier<Optional<T>> pollingTask,
+      final long period, final TimeUnit unit,
+      final ScheduledExecutorService executorService) {
+    final CompletableFuture<T> result = new CompletableFuture<>();
+    final ScheduledFuture<?> scheduled = executorService.scheduleAtFixedRate(
+        () -> pollTask(pollingTask, result), 0, period, unit);
+    result.whenComplete((r, ex) -> scheduled.cancel(true));
+    return result;
+  }
+
+  private static <T> void pollTask(
+      final Supplier<Optional<T>> pollingTask,
+      final CompletableFuture<T> resultFuture) {
+    try {
+      pollingTask.get().ifPresent(resultFuture::complete);
+    } catch (Exception ex) {
+      resultFuture.completeExceptionally(ex);
+    }
+  }
+
 }
