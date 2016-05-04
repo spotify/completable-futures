@@ -32,7 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -499,17 +498,12 @@ public class CompletableFuturesTest {
     assertThat(future, completesTo("done"));
   }
 
-  private static class ExternalTask {
-    private final AtomicInteger calls = new AtomicInteger(0);
-    public Optional<String> done() {
-      return calls.getAndIncrement() > 1 ? Optional.of("done") : Optional.empty();
-    }
-  }
-
   @Test
+  @SuppressWarnings("unchecked")
   public void poll_twice() throws Exception {
-    final ExternalTask task = new ExternalTask();
-    final CompletableFuture<String> future = poll(task::done, Duration.ofMillis(2), executor);
+    final Supplier<Optional<String>> supplier = mock(Supplier.class);
+    when(supplier.get()).thenReturn(Optional.empty(), Optional.of("done"));
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
 
     executor.tick(1, MILLISECONDS);
     assertThat(future.isDone(), is(false));
