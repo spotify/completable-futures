@@ -17,7 +17,7 @@ package com.spotify.futures;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
-import org.junit.After;
+import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,6 +43,7 @@ import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
 import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.handleCompose;
 import static com.spotify.futures.CompletableFutures.joinList;
+import static com.spotify.futures.CompletableFutures.poll;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -69,19 +69,14 @@ import static org.mockito.Mockito.when;
 
 public class CompletableFuturesTest {
 
-  private ScheduledExecutorService executor ;
+  private DeterministicScheduler executor;
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
   @Before
   public void setUp() {
-    executor = Executors.newScheduledThreadPool(1);
-  }
-
-  @After
-  public void tearDown() {
-    executor.shutdownNow();
+    executor = new DeterministicScheduler();
   }
 
   @Test
@@ -496,9 +491,10 @@ public class CompletableFuturesTest {
 
   @Test
   public void poll_done() throws Exception {
-    final CompletableFuture<String> future = CompletableFutures.poll(
-        () -> Optional.of("done"),
-        2, MILLISECONDS, executor);
+    final Supplier<Optional<String>> supplier = () -> Optional.of("done");
+    final CompletableFuture<String> future = poll(supplier, 2, MILLISECONDS, executor);
+
+    executor.runNextPendingCommand();
     assertThat(future, completesTo("done"));
   }
 
@@ -512,17 +508,21 @@ public class CompletableFuturesTest {
   @Test
   public void poll_twice() throws Exception {
     final ExternalTask task = new ExternalTask();
-    final CompletableFuture<String> future =
-        CompletableFutures.poll(task::done, 2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(task::done, 2, MILLISECONDS, executor);
+
+    executor.tick(1, MILLISECONDS);
+    assertThat(future.isDone(), is(false));
+
+    executor.tick(10, MILLISECONDS);
     assertThat(future, completesTo("done"));
   }
 
   @Test
   public void poll_taskReturnsNull() throws Exception {
-    final CompletableFuture<String> future = CompletableFutures.poll(
-        () -> null,
-        2, MILLISECONDS, executor);
+    final Supplier<Optional<String>> supplier = () -> null;
+    final CompletableFuture<String> future = poll(supplier, 2, MILLISECONDS, executor);
 
+    executor.runNextPendingCommand();
     exception.expectCause(isA(NullPointerException.class));
     future.get();
   }
@@ -530,10 +530,10 @@ public class CompletableFuturesTest {
   @Test
   public void poll_taskThrows() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
-    final CompletableFuture<String> future = CompletableFutures.poll(
-        () -> {throw ex;},
-        2, MILLISECONDS, executor);
+    final Supplier<Optional<String>> supplier = () ->  {throw ex;};
+    final CompletableFuture<String> future = poll(supplier, 2, MILLISECONDS, executor);
 
+    executor.runNextPendingCommand();
     exception.expectCause(is(ex));
     future.get();
   }
@@ -542,8 +542,8 @@ public class CompletableFuturesTest {
   public void poll_scheduled() throws Exception {
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final Supplier<Optional<String>> supplier = () -> Optional.of("hello");
+    poll(supplier, 2, MILLISECONDS, executor);
 
-    CompletableFutures.poll(supplier, 2, MILLISECONDS, executor);
     verify(executor).scheduleAtFixedRate(any(), eq(0L), eq(2L), eq(MILLISECONDS));
   }
 
@@ -555,9 +555,7 @@ public class CompletableFuturesTest {
     when(executor.scheduleAtFixedRate(any(), anyLong(), anyLong(), any()))
         .thenReturn(scheduledFuture);
 
-    final CompletableFuture<String> future = CompletableFutures.poll(
-        Optional::empty,
-        2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(Optional::empty, 2, MILLISECONDS, executor);
     future.cancel(true);
 
     verify(scheduledFuture).cancel(true);
