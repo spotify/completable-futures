@@ -69,8 +69,9 @@ If you are dealing with a long-running external task that only exposes a polling
 transform that into a future like so:
 
 ```java
-ExternalResource<T> resource = ...
-CompletableFuture<T> result = CompletableFutures.poll(resource::optionalResult, 2, SECONDS, executor);
+Supplier<Optional<T>> pollingTask = () -> Optional.ofNullable(resource.result());
+Duration frequency = Duration.ofSeconds(2);
+CompletableFuture<T> result = CompletableFutures.poll(pollingTask, frequency, executor);
 ```
 
 ### Missing parts of the CompletableFuture API

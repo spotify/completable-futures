@@ -15,6 +15,7 @@
  */
 package com.spotify.futures;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -253,18 +254,17 @@ public final class CompletableFutures {
    * complete exceptionally.
    *
    * @param pollingTask the polling task.
-   * @param period the polling period.
-   * @param unit the polling time unit.
+   * @param frequency the frequency to run the polling task at.
    * @param executorService the executor service to schedule the polling task on.
    * @return a future completing to the result of the polling task once that becomes available.
    */
   public static <T> CompletableFuture<T> poll(
       final Supplier<Optional<T>> pollingTask,
-      final long period, final TimeUnit unit,
+      final Duration frequency,
       final ScheduledExecutorService executorService) {
     final CompletableFuture<T> result = new CompletableFuture<>();
     final ScheduledFuture<?> scheduled = executorService.scheduleAtFixedRate(
-        () -> pollTask(pollingTask, result), 0, period, unit);
+        () -> pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);
     result.whenComplete((r, ex) -> scheduled.cancel(true));
     return result;
   }

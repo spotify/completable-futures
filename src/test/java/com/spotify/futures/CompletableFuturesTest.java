@@ -25,6 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -492,7 +493,7 @@ public class CompletableFuturesTest {
   @Test
   public void poll_done() throws Exception {
     final Supplier<Optional<String>> supplier = () -> Optional.of("done");
-    final CompletableFuture<String> future = poll(supplier, 2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
 
     executor.runNextPendingCommand();
     assertThat(future, completesTo("done"));
@@ -508,7 +509,7 @@ public class CompletableFuturesTest {
   @Test
   public void poll_twice() throws Exception {
     final ExternalTask task = new ExternalTask();
-    final CompletableFuture<String> future = poll(task::done, 2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(task::done, Duration.ofMillis(2), executor);
 
     executor.tick(1, MILLISECONDS);
     assertThat(future.isDone(), is(false));
@@ -520,7 +521,7 @@ public class CompletableFuturesTest {
   @Test
   public void poll_taskReturnsNull() throws Exception {
     final Supplier<Optional<String>> supplier = () -> null;
-    final CompletableFuture<String> future = poll(supplier, 2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
 
     executor.runNextPendingCommand();
     exception.expectCause(isA(NullPointerException.class));
@@ -531,7 +532,7 @@ public class CompletableFuturesTest {
   public void poll_taskThrows() throws Exception {
     final RuntimeException ex = new RuntimeException("boom");
     final Supplier<Optional<String>> supplier = () ->  {throw ex;};
-    final CompletableFuture<String> future = poll(supplier, 2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
 
     executor.runNextPendingCommand();
     exception.expectCause(is(ex));
@@ -542,7 +543,7 @@ public class CompletableFuturesTest {
   public void poll_scheduled() throws Exception {
     final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
     final Supplier<Optional<String>> supplier = () -> Optional.of("hello");
-    poll(supplier, 2, MILLISECONDS, executor);
+    poll(supplier, Duration.ofMillis(2), executor);
 
     verify(executor).scheduleAtFixedRate(any(), eq(0L), eq(2L), eq(MILLISECONDS));
   }
@@ -555,7 +556,7 @@ public class CompletableFuturesTest {
     when(executor.scheduleAtFixedRate(any(), anyLong(), anyLong(), any()))
         .thenReturn(scheduledFuture);
 
-    final CompletableFuture<String> future = poll(Optional::empty, 2, MILLISECONDS, executor);
+    final CompletableFuture<String> future = poll(Optional::empty, Duration.ofMillis(2), executor);
     future.cancel(true);
 
     verify(scheduledFuture).cancel(true);
