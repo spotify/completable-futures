@@ -501,10 +501,9 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void poll_twice() throws Exception {
-    final Supplier<Optional<String>> supplier = mock(Supplier.class);
-    when(supplier.get()).thenReturn(Optional.empty(), Optional.of("done"));
+    final List<Optional<String>> results = asList(Optional.empty(), Optional.of("done"));
+    final Supplier<Optional<String>> supplier = results.iterator()::next;
     final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
 
     executor.tick(1, MILLISECONDS);
