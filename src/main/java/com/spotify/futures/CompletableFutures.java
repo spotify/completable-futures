@@ -142,7 +142,7 @@ public final class CompletableFutures {
    * {@code null} if none) of this stage as arguments, and the
    * function's result is used to complete the returned stage.
    *
-   * This differs from
+   * <p>This differs from
    * {@link java.util.concurrent.CompletionStage#handle(java.util.function.BiFunction)}
    * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
    * the value directly.
@@ -166,7 +166,7 @@ public final class CompletableFutures {
    * completes normally, then the returned stage also completes
    * normally with the same value.
    *
-   * This differs from
+   * <p>This differs from
    * {@link java.util.concurrent.CompletionStage#exceptionally(java.util.function.Function)}
    * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
    * the value directly.
@@ -184,8 +184,7 @@ public final class CompletableFutures {
   }
 
   /**
-   * This takes a stage of a stage of a value and
-   * returns a plain stage of a value.
+   * This takes a stage of a stage of a value and returns a plain stage of a value.
    *
    * @param stage a {@link CompletionStage} of a {@link CompletionStage} of a value
    * @return the {@link CompletionStage} of the value
@@ -247,11 +246,16 @@ public final class CompletableFutures {
   /**
    * Periodically poll an external resource until it returns a non-empty result.
    *
-   * The polling task should return Optional.empty() until it becomes available, and then
-   * Optional.of(result).
+   * <p>The polling task should return Optional.empty() until it becomes available, and then
+   * Optional.of(result). If the polling task throws an exception or returns null, that will cause
+   * the result future to complete exceptionally.
    *
-   * If the polling task throws an exception or returns null, that will cause the result future to
-   * complete exceptionally.
+   * <p>Canceling the returned future will cancel the scheduled polling task as well.
+   *
+   * <p>Note that on a ScheduledThreadPoolExecutor the polling task might remain allocated for up
+   * to 'frequency' time after completing or being cancelled. If you have lots of polling operations
+   * or a long polling frequency, consider setting removeOnCancelPolicy to true.
+   * See {@link java.util.concurrent.ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy(boolean)}.
    *
    * @param pollingTask the polling task.
    * @param frequency the frequency to run the polling task at.

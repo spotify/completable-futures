@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
@@ -53,6 +54,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -554,6 +556,18 @@ public class CompletableFuturesTest {
     future.cancel(true);
 
     verify(scheduledFuture).cancel(true);
+  }
+
+  @Test
+  public void poll_notRunningAfterCancel() throws Exception {
+    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    final CompletableFuture<String> future = poll(Optional::empty, Duration.ofMillis(2), executor);
+
+    future.cancel(true);
+    Thread.sleep(10);
+
+    final List<Runnable> running = executor.shutdownNow();
+    assertThat(running, is(empty()));
   }
 
   private static <T> CompletableFuture<T> incompleteFuture() {
