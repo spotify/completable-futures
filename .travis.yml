@@ -6,7 +6,7 @@ install: true # This runs the "true" command in the install phase; thus skipping
 script:
   - |
     if [[ "$TRAVIS_BRANCH" == master && "$TRAVIS_PULL_REQUEST" == false ]]
-    then mvn deploy -s travis-settings.xml
+    then mvn deploy site-deploy -s travis-settings.xml
     else mvn verify
     fi
 
