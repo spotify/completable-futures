@@ -1,0 +1,5 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+completable-futures,com.spotify.futures,CompletableFutures,0,262,0,6,0,45,0,21,0,18
+completable-futures,com.spotify.futures,Function3,0,15,0,0,0,2,0,2,0,2
+completable-futures,com.spotify.futures,Function4,0,16,0,0,0,2,0,2,0,2
+completable-futures,com.spotify.futures,Function5,0,17,0,0,0,2,0,2,0,2
