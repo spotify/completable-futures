@@ -15,12 +15,18 @@
  */
 package com.spotify.futures;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -28,8 +34,8 @@ import static java.util.stream.Collectors.toList;
 
 public final class CompletableFutures {
 
-<span class="fc" id="L31">  private CompletableFutures() {</span>
-<span class="fc" id="L32">    throw new IllegalAccessError(&quot;This class must not be instantiated.&quot;);</span>
+<span class="fc" id="L37">  private CompletableFutures() {</span>
+<span class="fc" id="L38">    throw new IllegalAccessError(&quot;This class must not be instantiated.&quot;);</span>
   }
 
   /**
@@ -51,17 +57,17 @@ public final class CompletableFutures {
     // see AllAsListBenchmark
 
     @SuppressWarnings(&quot;unchecked&quot;) // generic array creation
-<span class="fc" id="L54">    final CompletableFuture&lt;? extends T&gt;[] all = new CompletableFuture[stages.size()];</span>
-<span class="fc bfc" id="L55" title="All 2 branches covered.">    for (int i = 0; i &lt; stages.size(); i++) {</span>
-<span class="fc" id="L56">      all[i] = stages.get(i).toCompletableFuture();</span>
+<span class="fc" id="L60">    final CompletableFuture&lt;? extends T&gt;[] all = new CompletableFuture[stages.size()];</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">    for (int i = 0; i &lt; stages.size(); i++) {</span>
+<span class="fc" id="L62">      all[i] = stages.get(i).toCompletableFuture();</span>
     }
-<span class="fc" id="L58">    return CompletableFuture.allOf(all)</span>
-<span class="fc" id="L59">        .thenApply(ignored -&gt; {</span>
-<span class="fc" id="L60">          final List&lt;T&gt; result = new ArrayList&lt;&gt;(all.length);</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">          for (int i = 0; i &lt; all.length; i++) {</span>
-<span class="fc" id="L62">            result.add(all[i].join());</span>
+<span class="fc" id="L64">    return CompletableFuture.allOf(all)</span>
+<span class="fc" id="L65">        .thenApply(ignored -&gt; {</span>
+<span class="fc" id="L66">          final List&lt;T&gt; result = new ArrayList&lt;&gt;(all.length);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">          for (int i = 0; i &lt; all.length; i++) {</span>
+<span class="fc" id="L68">            result.add(all[i].join());</span>
           }
-<span class="fc" id="L64">          return result;</span>
+<span class="fc" id="L70">          return result;</span>
         });
   }
 
@@ -74,9 +80,9 @@ public final class CompletableFutures {
    * @throws NullPointerException if the supplied throwable is {@code null}
    */
   public static &lt;T&gt; CompletableFuture&lt;T&gt; exceptionallyCompletedFuture(Throwable throwable) {
-<span class="fc" id="L77">    final CompletableFuture&lt;T&gt; future = new CompletableFuture&lt;&gt;();</span>
-<span class="fc" id="L78">    future.completeExceptionally(throwable);</span>
-<span class="fc" id="L79">    return future;</span>
+<span class="fc" id="L83">    final CompletableFuture&lt;T&gt; future = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L84">    future.completeExceptionally(throwable);</span>
+<span class="fc" id="L85">    return future;</span>
   }
 
   /**
@@ -99,7 +105,7 @@ public final class CompletableFutures {
    */
   public static &lt;T, S extends CompletionStage&lt;? extends T&gt;&gt;
   Collector&lt;S, ?, CompletableFuture&lt;List&lt;T&gt;&gt;&gt; joinList() {
-<span class="fc" id="L102">    return collectingAndThen(toList(), CompletableFutures::allAsList);</span>
+<span class="fc" id="L108">    return collectingAndThen(toList(), CompletableFutures::allAsList);</span>
   }
 
   /**
@@ -108,10 +114,10 @@ public final class CompletableFutures {
    * @throws IllegalStateException if the stage is not completed.
    */
   public static &lt;T&gt; void checkCompleted(CompletionStage&lt;T&gt; stage) {
-<span class="fc bfc" id="L111" title="All 2 branches covered.">    if (!stage.toCompletableFuture().isDone()) {</span>
-<span class="fc" id="L112">      throw new IllegalStateException(&quot;future was not completed&quot;);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">    if (!stage.toCompletableFuture().isDone()) {</span>
+<span class="fc" id="L118">      throw new IllegalStateException(&quot;future was not completed&quot;);</span>
     }
-<span class="fc" id="L114">  }</span>
+<span class="fc" id="L120">  }</span>
 
   /**
    * Get the value of a completed stage.
@@ -121,9 +127,9 @@ public final class CompletableFutures {
    * @throws IllegalStateException if the stage is not completed.
    */
   public static &lt;T&gt; T getCompleted(CompletionStage&lt;T&gt; stage) {
-<span class="fc" id="L124">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
-<span class="fc" id="L125">    checkCompleted(future);</span>
-<span class="fc" id="L126">    return future.join();</span>
+<span class="fc" id="L130">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
+<span class="fc" id="L131">    checkCompleted(future);</span>
+<span class="fc" id="L132">    return future.join();</span>
   }
 
   /**
@@ -136,7 +142,7 @@ public final class CompletableFutures {
    * {@code null} if none) of this stage as arguments, and the
    * function's result is used to complete the returned stage.
    *
-   * This differs from
+   * &lt;p&gt;This differs from
    * {@link java.util.concurrent.CompletionStage#handle(java.util.function.BiFunction)}
    * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
    * the value directly.
@@ -150,7 +156,7 @@ public final class CompletableFutures {
   public static &lt;T, U&gt; CompletionStage&lt;U&gt; handleCompose(
       CompletionStage&lt;T&gt; stage,
       BiFunction&lt;? super T, Throwable, ? extends CompletionStage&lt;U&gt;&gt; fn) {
-<span class="fc" id="L153">    return dereference(stage.handle(fn));</span>
+<span class="fc" id="L159">    return dereference(stage.handle(fn));</span>
   }
 
   /**
@@ -160,7 +166,7 @@ public final class CompletableFutures {
    * completes normally, then the returned stage also completes
    * normally with the same value.
    *
-   * This differs from
+   * &lt;p&gt;This differs from
    * {@link java.util.concurrent.CompletionStage#exceptionally(java.util.function.Function)}
    * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
    * the value directly.
@@ -174,68 +180,108 @@ public final class CompletableFutures {
   public static &lt;T&gt; CompletionStage&lt;T&gt; exceptionallyCompose(
       CompletionStage&lt;T&gt; stage,
       Function&lt;Throwable, ? extends CompletionStage&lt;T&gt;&gt; fn) {
-<span class="fc" id="L177">    return dereference(wrap(stage).exceptionally(fn));</span>
+<span class="fc" id="L183">    return dereference(wrap(stage).exceptionally(fn));</span>
   }
 
   /**
-   * This takes a stage of a stage of a value and
-   * returns a plain stage of a value.
+   * This takes a stage of a stage of a value and returns a plain stage of a value.
    *
    * @param stage a {@link CompletionStage} of a {@link CompletionStage} of a value
    * @return the {@link CompletionStage} of the value
    */
   public static &lt;T&gt; CompletionStage&lt;T&gt; dereference(
       CompletionStage&lt;? extends CompletionStage&lt;T&gt;&gt; stage) {
-<span class="fc" id="L189">    return stage.thenCompose(Function.identity());</span>
+<span class="fc" id="L194">    return stage.thenCompose(Function.identity());</span>
   }
 
   private static &lt;T&gt; CompletionStage&lt;CompletionStage&lt;T&gt;&gt; wrap(CompletionStage&lt;T&gt; future) {
     //noinspection unchecked
-<span class="fc" id="L194">    return future.thenApply(CompletableFuture::completedFuture);</span>
+<span class="fc" id="L199">    return future.thenApply(CompletableFuture::completedFuture);</span>
   }
 
   public static &lt;R, A, B&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b,
       BiFunction&lt;A, B, R&gt; function) {
-<span class="fc" id="L200">    return a.thenCombine(b, function);</span>
+<span class="fc" id="L205">    return a.thenCombine(b, function);</span>
   }
 
   public static &lt;R, A, B, C&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
       Function3&lt;A, B, C, R&gt; function) {
-<span class="fc" id="L206">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L207">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L208">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L211">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L212">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L213">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
 
-<span class="fc" id="L210">    return CompletableFuture.allOf(af, bf, cf)</span>
-<span class="fc" id="L211">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join()));</span>
+<span class="fc" id="L215">    return CompletableFuture.allOf(af, bf, cf)</span>
+<span class="fc" id="L216">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join()));</span>
   }
 
   public static &lt;R, A, B, C, D&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c, CompletionStage&lt;D&gt; d,
       Function4&lt;A, B, C, D, R&gt; function) {
-<span class="fc" id="L217">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L218">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L219">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L220">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L222">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L223">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L224">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L225">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
 
-<span class="fc" id="L222">    return CompletableFuture.allOf(af, bf, cf, df)</span>
-<span class="fc" id="L223">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
+<span class="fc" id="L227">    return CompletableFuture.allOf(af, bf, cf, df)</span>
+<span class="fc" id="L228">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
   }
 
   public static &lt;R, A, B, C, D, E&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
       CompletionStage&lt;D&gt; d, CompletionStage&lt;E&gt; e,
       Function5&lt;A, B, C, D, E, R&gt; function) {
-<span class="fc" id="L230">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L231">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L232">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L233">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
-<span class="fc" id="L234">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L235">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L236">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L237">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L238">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L239">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
 
-<span class="fc" id="L236">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
-<span class="fc" id="L237">        .thenApply(ignored -&gt;</span>
-<span class="fc" id="L238">                       function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));</span>
+<span class="fc" id="L241">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
+<span class="fc" id="L242">        .thenApply(ignored -&gt;</span>
+<span class="fc" id="L243">                       function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));</span>
   }
+
+  /**
+   * Periodically poll an external resource until it returns a non-empty result.
+   *
+   * &lt;p&gt;The polling task should return Optional.empty() until it becomes available, and then
+   * Optional.of(result). If the polling task throws an exception or returns null, that will cause
+   * the result future to complete exceptionally.
+   *
+   * &lt;p&gt;Canceling the returned future will cancel the scheduled polling task as well.
+   *
+   * &lt;p&gt;Note that on a ScheduledThreadPoolExecutor the polling task might remain allocated for up
+   * to 'frequency' time after completing or being cancelled. If you have lots of polling operations
+   * or a long polling frequency, consider setting removeOnCancelPolicy to true.
+   * See {@link java.util.concurrent.ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy(boolean)}.
+   *
+   * @param pollingTask the polling task.
+   * @param frequency the frequency to run the polling task at.
+   * @param executorService the executor service to schedule the polling task on.
+   * @return a future completing to the result of the polling task once that becomes available.
+   */
+  public static &lt;T&gt; CompletableFuture&lt;T&gt; poll(
+      final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
+      final Duration frequency,
+      final ScheduledExecutorService executorService) {
+<span class="fc" id="L269">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L270">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
+<span class="fc" id="L271">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
+<span class="fc" id="L272">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
+<span class="fc" id="L273">    return result;</span>
+  }
+
+  private static &lt;T&gt; void pollTask(
+      final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
+      final CompletableFuture&lt;T&gt; resultFuture) {
+    try {
+<span class="fc" id="L280">      pollingTask.get().ifPresent(resultFuture::complete);</span>
+<span class="fc" id="L281">    } catch (Exception ex) {</span>
+<span class="fc" id="L282">      resultFuture.completeExceptionally(ex);</span>
+<span class="fc" id="L283">    }</span>
+<span class="fc" id="L284">  }</span>
+
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
