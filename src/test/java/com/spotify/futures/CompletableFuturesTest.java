@@ -17,16 +17,23 @@ package com.spotify.futures;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
+import org.jmock.lib.concurrent.DeterministicScheduler;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
@@ -37,13 +44,17 @@ import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
 import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.handleCompose;
 import static com.spotify.futures.CompletableFutures.joinList;
+import static com.spotify.futures.CompletableFutures.poll;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -51,11 +62,24 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CompletableFuturesTest {
 
+  private DeterministicScheduler executor;
+
   @Rule
   public ExpectedException exception = ExpectedException.none();
+
+  @Before
+  public void setUp() {
+    executor = new DeterministicScheduler();
+  }
 
   @Test
   public void allAsList_empty() throws Exception {
@@ -467,6 +491,84 @@ public class CompletableFuturesTest {
     ctor.newInstance();
   }
 
+  @Test
+  public void poll_done() throws Exception {
+    final Supplier<Optional<String>> supplier = () -> Optional.of("done");
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
+
+    executor.runNextPendingCommand();
+    assertThat(future, completesTo("done"));
+  }
+
+  @Test
+  public void poll_twice() throws Exception {
+    final List<Optional<String>> results = asList(Optional.empty(), Optional.of("done"));
+    final Supplier<Optional<String>> supplier = results.iterator()::next;
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
+
+    executor.tick(1, MILLISECONDS);
+    assertThat(future.isDone(), is(false));
+
+    executor.tick(10, MILLISECONDS);
+    assertThat(future, completesTo("done"));
+  }
+
+  @Test
+  public void poll_taskReturnsNull() throws Exception {
+    final Supplier<Optional<String>> supplier = () -> null;
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
+
+    executor.runNextPendingCommand();
+    exception.expectCause(isA(NullPointerException.class));
+    future.get();
+  }
+
+  @Test
+  public void poll_taskThrows() throws Exception {
+    final RuntimeException ex = new RuntimeException("boom");
+    final Supplier<Optional<String>> supplier = () ->  {throw ex;};
+    final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
+
+    executor.runNextPendingCommand();
+    exception.expectCause(is(ex));
+    future.get();
+  }
+
+  @Test
+  public void poll_scheduled() throws Exception {
+    final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+    final Supplier<Optional<String>> supplier = () -> Optional.of("hello");
+    poll(supplier, Duration.ofMillis(2), executor);
+
+    verify(executor).scheduleAtFixedRate(any(), eq(0L), eq(2L), eq(MILLISECONDS));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void poll_resultFutureCanceled() throws Exception {
+    final ScheduledFuture scheduledFuture = mock(ScheduledFuture.class);
+    final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+    when(executor.scheduleAtFixedRate(any(), anyLong(), anyLong(), any()))
+        .thenReturn(scheduledFuture);
+
+    final CompletableFuture<String> future = poll(Optional::empty, Duration.ofMillis(2), executor);
+    future.cancel(true);
+
+    verify(scheduledFuture).cancel(true);
+  }
+
+  @Test
+  public void poll_notRunningAfterCancel() throws Exception {
+    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    final CompletableFuture<String> future = poll(Optional::empty, Duration.ofMillis(2), executor);
+
+    future.cancel(true);
+    Thread.sleep(10);
+
+    final List<Runnable> running = executor.shutdownNow();
+    assertThat(running, is(empty()));
+  }
+
   private static <T> CompletableFuture<T> incompleteFuture() {
     return new CompletableFuture<>();
   }
@@ -480,7 +582,7 @@ public class CompletableFuturesTest {
       @Override
       protected boolean matchesSafely(CompletionStage<T> item) {
         try {
-          final T value = item.toCompletableFuture().get(1, TimeUnit.SECONDS);
+          final T value = item.toCompletableFuture().get(1, SECONDS);
           return expected.matches(value);
         } catch (Exception ex) {
           return false;

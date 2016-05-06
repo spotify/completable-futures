@@ -15,12 +15,18 @@
  */
 package com.spotify.futures;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -136,7 +142,7 @@ public final class CompletableFutures {
    * {@code null} if none) of this stage as arguments, and the
    * function's result is used to complete the returned stage.
    *
-   * This differs from
+   * <p>This differs from
    * {@link java.util.concurrent.CompletionStage#handle(java.util.function.BiFunction)}
    * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
    * the value directly.
@@ -160,7 +166,7 @@ public final class CompletableFutures {
    * completes normally, then the returned stage also completes
    * normally with the same value.
    *
-   * This differs from
+   * <p>This differs from
    * {@link java.util.concurrent.CompletionStage#exceptionally(java.util.function.Function)}
    * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
    * the value directly.
@@ -178,8 +184,7 @@ public final class CompletableFutures {
   }
 
   /**
-   * This takes a stage of a stage of a value and
-   * returns a plain stage of a value.
+   * This takes a stage of a stage of a value and returns a plain stage of a value.
    *
    * @param stage a {@link CompletionStage} of a {@link CompletionStage} of a value
    * @return the {@link CompletionStage} of the value
@@ -237,4 +242,45 @@ public final class CompletableFutures {
         .thenApply(ignored ->
                        function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));
   }
+
+  /**
+   * Periodically poll an external resource until it returns a non-empty result.
+   *
+   * <p>The polling task should return Optional.empty() until it becomes available, and then
+   * Optional.of(result). If the polling task throws an exception or returns null, that will cause
+   * the result future to complete exceptionally.
+   *
+   * <p>Canceling the returned future will cancel the scheduled polling task as well.
+   *
+   * <p>Note that on a ScheduledThreadPoolExecutor the polling task might remain allocated for up
+   * to 'frequency' time after completing or being cancelled. If you have lots of polling operations
+   * or a long polling frequency, consider setting removeOnCancelPolicy to true.
+   * See {@link java.util.concurrent.ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy(boolean)}.
+   *
+   * @param pollingTask the polling task.
+   * @param frequency the frequency to run the polling task at.
+   * @param executorService the executor service to schedule the polling task on.
+   * @return a future completing to the result of the polling task once that becomes available.
+   */
+  public static <T> CompletableFuture<T> poll(
+      final Supplier<Optional<T>> pollingTask,
+      final Duration frequency,
+      final ScheduledExecutorService executorService) {
+    final CompletableFuture<T> result = new CompletableFuture<>();
+    final ScheduledFuture<?> scheduled = executorService.scheduleAtFixedRate(
+        () -> pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);
+    result.whenComplete((r, ex) -> scheduled.cancel(true));
+    return result;
+  }
+
+  private static <T> void pollTask(
+      final Supplier<Optional<T>> pollingTask,
+      final CompletableFuture<T> resultFuture) {
+    try {
+      pollingTask.get().ifPresent(resultFuture::complete);
+    } catch (Exception ex) {
+      resultFuture.completeExceptionally(ex);
+    }
+  }
+
 }

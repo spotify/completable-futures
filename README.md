@@ -61,6 +61,19 @@ CompletableFutures.combine(f1, f2, f3, f4, (a, b, c, d) -> a + b + c + d);
 CompletableFutures.combine(f1, f2, f3, f4, f5, (a, b, c, d, e) -> a + b + c + d + e);
 ```
 
+### Scheduling
+
+#### Polling an external resource
+
+If you are dealing with a long-running external task that only exposes a polling API, you can
+transform that into a future like so:
+
+```java
+Supplier<Optional<T>> pollingTask = () -> Optional.ofNullable(resource.result());
+Duration frequency = Duration.ofSeconds(2);
+CompletableFuture<T> result = CompletableFutures.poll(pollingTask, frequency, executor);
+```
+
 ### Missing parts of the CompletableFuture API
 
 The `CompletableFutures` class includes utility functions for operating on futures that is missing
