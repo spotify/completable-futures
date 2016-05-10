@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -32,24 +33,33 @@ import java.util.stream.Collector;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
+/**
+ * A collection of static utility methods that extend the
+ * {@link java.util.concurrent.CompletableFuture Java completable future} API.
+ *
+ * @since 0.1.0
+ */
 public final class CompletableFutures {
 
-<span class="fc" id="L37">  private CompletableFutures() {</span>
-<span class="fc" id="L38">    throw new IllegalAccessError(&quot;This class must not be instantiated.&quot;);</span>
+<span class="fc" id="L44">  private CompletableFutures() {</span>
+<span class="fc" id="L45">    throw new IllegalAccessError(&quot;This class must not be instantiated.&quot;);</span>
   }
 
   /**
    * Returns a new {@link CompletableFuture} which completes to a list of all values of its input
    * stages, if all succeed.  The list of results is in the same order as the input stages.
    *
-   * &lt;p&gt;If any of the given stages complete exceptionally, then the returned future also does so,
-   * with a CompletionException holding this exception as its cause.
+   * &lt;p&gt; If any of the given stages complete exceptionally, then the returned future also does so,
+   * with a {@link CompletionException} holding this exception as its cause.
    *
-   * &lt;p&gt;If no stages are provided, returns a future holding an empty list.
+   * &lt;p&gt; If no stages are provided, returns a future holding an empty list.
    *
-   * @param stages The stages to combine.
-   * @return A future that completes to a list of the results of the supplied stages.
-   * @throws NullPointerException if the stages list or any of its elements are {@code null}.
+   * @param stages the stages to combine
+   * @param &lt;T&gt;    the common super-type of all of the input stages, that determines the monomorphic
+   *               type of the output future
+   * @return a future that completes to a list of the results of the supplied stages
+   * @throws NullPointerException if the stages list or any of its elements are {@code null}
+   * @since 0.1.0
    */
   public static &lt;T&gt; CompletableFuture&lt;List&lt;T&gt;&gt; allAsList(
       List&lt;? extends CompletionStage&lt;? extends T&gt;&gt; stages) {
@@ -57,17 +67,17 @@ public final class CompletableFutures {
     // see AllAsListBenchmark
 
     @SuppressWarnings(&quot;unchecked&quot;) // generic array creation
-<span class="fc" id="L60">    final CompletableFuture&lt;? extends T&gt;[] all = new CompletableFuture[stages.size()];</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">    for (int i = 0; i &lt; stages.size(); i++) {</span>
-<span class="fc" id="L62">      all[i] = stages.get(i).toCompletableFuture();</span>
+<span class="fc" id="L70">    final CompletableFuture&lt;? extends T&gt;[] all = new CompletableFuture[stages.size()];</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    for (int i = 0; i &lt; stages.size(); i++) {</span>
+<span class="fc" id="L72">      all[i] = stages.get(i).toCompletableFuture();</span>
     }
-<span class="fc" id="L64">    return CompletableFuture.allOf(all)</span>
-<span class="fc" id="L65">        .thenApply(ignored -&gt; {</span>
-<span class="fc" id="L66">          final List&lt;T&gt; result = new ArrayList&lt;&gt;(all.length);</span>
-<span class="fc bfc" id="L67" title="All 2 branches covered.">          for (int i = 0; i &lt; all.length; i++) {</span>
-<span class="fc" id="L68">            result.add(all[i].join());</span>
+<span class="fc" id="L74">    return CompletableFuture.allOf(all)</span>
+<span class="fc" id="L75">        .thenApply(ignored -&gt; {</span>
+<span class="fc" id="L76">          final List&lt;T&gt; result = new ArrayList&lt;&gt;(all.length);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">          for (int i = 0; i &lt; all.length; i++) {</span>
+<span class="fc" id="L78">            result.add(all[i].join());</span>
           }
-<span class="fc" id="L70">          return result;</span>
+<span class="fc" id="L80">          return result;</span>
         });
   }
 
@@ -76,87 +86,104 @@ public final class CompletableFutures {
    * the given exception.
    *
    * @param throwable the exception
+   * @param &lt;T&gt;       an arbitrary type for the returned future; can be anything since the future
+   *                  will be exceptionally completed and thus there will never be a value of type
+   *                  {@code T}
    * @return a future that exceptionally completed with the supplied exception
    * @throws NullPointerException if the supplied throwable is {@code null}
+   * @since 0.1.0
    */
   public static &lt;T&gt; CompletableFuture&lt;T&gt; exceptionallyCompletedFuture(Throwable throwable) {
-<span class="fc" id="L83">    final CompletableFuture&lt;T&gt; future = new CompletableFuture&lt;&gt;();</span>
-<span class="fc" id="L84">    future.completeExceptionally(throwable);</span>
-<span class="fc" id="L85">    return future;</span>
+<span class="fc" id="L97">    final CompletableFuture&lt;T&gt; future = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L98">    future.completeExceptionally(throwable);</span>
+<span class="fc" id="L99">    return future;</span>
   }
 
   /**
    * Collect a stream of {@link CompletionStage}s into a single future holding a list of the
    * joined entities.
-   * Usage:
-   * &lt;pre&gt;
-   *   collection.stream()
-   *      .map(this::someAsyncFunc)
-   *      .collect(joinList())
-   *      .thenApply(this::consumeList)
-   * &lt;/pre&gt;
-   * The generated CompletableFuture will complete to a list of all entities, in the order they were
-   * encountered in the original stream. Similar to
-   * {@link CompletableFuture#allOf(CompletableFuture[])}, if any of the input futures complete
-   * exceptionally, then the returned CompletableFuture also does so, with a CompletionException
-   * holding this exception as its cause.
    *
-   * @throws NullPointerException if any future in the stream is {@code null}.
+   * &lt;p&gt; Usage:
+   *
+   * &lt;pre&gt;{@code
+   * collection.stream()
+   *     .map(this::someAsyncFunc)
+   *     .collect(joinList())
+   *     .thenApply(this::consumeList)
+   * }&lt;/pre&gt;
+   *
+   * &lt;p&gt; The generated {@link CompletableFuture} will complete to a list of all entities, in the
+   * order they were encountered in the original stream.  Similar to
+   * {@link CompletableFuture#allOf(CompletableFuture[])}, if any of the input futures complete
+   * exceptionally, then the returned CompletableFuture also does so, with a
+   * {@link CompletionException} holding this exception as its cause.
+   *
+   * @param &lt;T&gt; the common super-type of all of the input stages, that determines the monomorphic
+   *            type of the output future
+   * @param &lt;S&gt; the implementation of {@link CompletionStage} that the stream contains
+   * @return a new {@link CompletableFuture} according to the rules outlined in the method
+   * description
+   * @throws NullPointerException if any future in the stream is {@code null}
+   * @since 0.1.0
    */
   public static &lt;T, S extends CompletionStage&lt;? extends T&gt;&gt;
   Collector&lt;S, ?, CompletableFuture&lt;List&lt;T&gt;&gt;&gt; joinList() {
-<span class="fc" id="L108">    return collectingAndThen(toList(), CompletableFutures::allAsList);</span>
+<span class="fc" id="L131">    return collectingAndThen(toList(), CompletableFutures::allAsList);</span>
   }
 
   /**
-   * Check that a stage is completed.
-   * @param stage a {@link CompletionStage}.
-   * @throws IllegalStateException if the stage is not completed.
+   * Checks that a stage is completed.
+   *
+   * @param stage the {@link CompletionStage} to check
+   * @throws IllegalStateException if the stage is not completed
+   * @since 0.1.0
    */
-  public static &lt;T&gt; void checkCompleted(CompletionStage&lt;T&gt; stage) {
-<span class="fc bfc" id="L117" title="All 2 branches covered.">    if (!stage.toCompletableFuture().isDone()) {</span>
-<span class="fc" id="L118">      throw new IllegalStateException(&quot;future was not completed&quot;);</span>
+  public static void checkCompleted(CompletionStage&lt;?&gt; stage) {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">    if (!stage.toCompletableFuture().isDone()) {</span>
+<span class="fc" id="L143">      throw new IllegalStateException(&quot;future was not completed&quot;);</span>
     }
-<span class="fc" id="L120">  }</span>
+<span class="fc" id="L145">  }</span>
 
   /**
-   * Get the value of a completed stage.
+   * Gets the value of a completed stage.
    *
-   * @param stage a completed {@link CompletionStage}.
-   * @return the value of the stage if it has one.
-   * @throws IllegalStateException if the stage is not completed.
+   * @param stage a completed {@link CompletionStage}
+   * @param &lt;T&gt;   the type of the value that the stage completes into
+   * @return the value of the stage if it has one
+   * @throws IllegalStateException if the stage is not completed
+   * @since 0.1.0
    */
   public static &lt;T&gt; T getCompleted(CompletionStage&lt;T&gt; stage) {
-<span class="fc" id="L130">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
-<span class="fc" id="L131">    checkCompleted(future);</span>
-<span class="fc" id="L132">    return future.join();</span>
+<span class="fc" id="L157">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
+<span class="fc" id="L158">    checkCompleted(future);</span>
+<span class="fc" id="L159">    return future.join();</span>
   }
 
   /**
-   * Returns a new stage that, when this stage completes
-   * either normally or exceptionally, is executed with this stage's
-   * result and exception as arguments to the supplied function.
+   * Returns a new stage that, when this stage completes either normally or exceptionally, is
+   * executed with this stage's result and exception as arguments to the supplied function.
    *
-   * &lt;p&gt;When this stage is complete, the given function is invoked
-   * with the result (or {@code null} if none) and the exception (or
-   * {@code null} if none) of this stage as arguments, and the
+   * &lt;p&gt; When this stage is complete, the given function is invoked with the result (or {@code null}
+   * if none) and the exception (or {@code null} if none) of this stage as arguments, and the
    * function's result is used to complete the returned stage.
    *
-   * &lt;p&gt;This differs from
-   * {@link java.util.concurrent.CompletionStage#handle(java.util.function.BiFunction)}
-   * in that the function should return a {@link java.util.concurrent.CompletionStage} rather than
-   * the value directly.
+   * &lt;p&gt; This differs from
+   * {@link java.util.concurrent.CompletionStage#handle(java.util.function.BiFunction)} in that the
+   * function should return a {@link java.util.concurrent.CompletionStage} rather than the value
+   * directly.
    *
    * @param stage the {@link CompletionStage} to compose
-   * @param fn the function to use to compute the value of the
-   * returned {@link CompletionStage}
-   * @param &lt;U&gt; the function's return type
+   * @param fn    the function to use to compute the value of the
+   *              returned {@link CompletionStage}
+   * @param &lt;T&gt;   the type of the input stage's value.
+   * @param &lt;U&gt;   the function's return type
    * @return the new {@link CompletionStage}
+   * @since 0.1.0
    */
   public static &lt;T, U&gt; CompletionStage&lt;U&gt; handleCompose(
       CompletionStage&lt;T&gt; stage,
       BiFunction&lt;? super T, Throwable, ? extends CompletionStage&lt;U&gt;&gt; fn) {
-<span class="fc" id="L159">    return dereference(stage.handle(fn));</span>
+<span class="fc" id="L186">    return dereference(stage.handle(fn));</span>
   }
 
   /**
@@ -172,116 +199,183 @@ public final class CompletableFutures {
    * the value directly.
    *
    * @param stage the {@link CompletionStage} to compose
-   * @param fn the function to use to compute the value of the
-   * returned {@link CompletionStage} if this stage completed
-   * exceptionally
+   * @param fn    the function to use to compute the value of the
+   *              returned {@link CompletionStage} if this stage completed
+   *              exceptionally
+   * @param &lt;T&gt;   the type of the input stage's value.
    * @return the new {@link CompletionStage}
+   * @since 0.1.0
    */
   public static &lt;T&gt; CompletionStage&lt;T&gt; exceptionallyCompose(
       CompletionStage&lt;T&gt; stage,
       Function&lt;Throwable, ? extends CompletionStage&lt;T&gt;&gt; fn) {
-<span class="fc" id="L183">    return dereference(wrap(stage).exceptionally(fn));</span>
+<span class="fc" id="L212">    return dereference(wrap(stage).exceptionally(fn));</span>
   }
 
   /**
    * This takes a stage of a stage of a value and returns a plain stage of a value.
    *
    * @param stage a {@link CompletionStage} of a {@link CompletionStage} of a value
+   * @param &lt;T&gt;   the type of the inner stage's value.
    * @return the {@link CompletionStage} of the value
+   * @since 0.1.0
    */
   public static &lt;T&gt; CompletionStage&lt;T&gt; dereference(
       CompletionStage&lt;? extends CompletionStage&lt;T&gt;&gt; stage) {
-<span class="fc" id="L194">    return stage.thenCompose(Function.identity());</span>
+<span class="fc" id="L225">    return stage.thenCompose(Function.identity());</span>
   }
 
   private static &lt;T&gt; CompletionStage&lt;CompletionStage&lt;T&gt;&gt; wrap(CompletionStage&lt;T&gt; future) {
     //noinspection unchecked
-<span class="fc" id="L199">    return future.thenApply(CompletableFuture::completedFuture);</span>
+<span class="fc" id="L230">    return future.thenApply(CompletableFuture::completedFuture);</span>
   }
 
+  /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param function the combining function.
+   * @param &lt;R&gt;      the type of the combining function's return value.
+   * @param &lt;A&gt;      the type of the first stage's value.
+   * @param &lt;B&gt;      the type of the second stage's value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.1.0
+   */
   public static &lt;R, A, B&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b,
       BiFunction&lt;A, B, R&gt; function) {
-<span class="fc" id="L205">    return a.thenCombine(b, function);</span>
+<span class="fc" id="L248">    return a.thenCombine(b, function);</span>
   }
 
+  /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param function the combining function.
+   * @param &lt;R&gt;      the type of the combining function's return value.
+   * @param &lt;A&gt;      the type of the first stage's value.
+   * @param &lt;B&gt;      the type of the second stage's value.
+   * @param &lt;C&gt;      the type of the third stage's value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.1.0
+   */
   public static &lt;R, A, B, C&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
       Function3&lt;A, B, C, R&gt; function) {
-<span class="fc" id="L211">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L212">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L213">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L268">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L269">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L270">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
 
-<span class="fc" id="L215">    return CompletableFuture.allOf(af, bf, cf)</span>
-<span class="fc" id="L216">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join()));</span>
+<span class="fc" id="L272">    return CompletableFuture.allOf(af, bf, cf)</span>
+<span class="fc" id="L273">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join()));</span>
   }
 
+  /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param function the combining function.
+   * @param &lt;R&gt;      the type of the combining function's return value.
+   * @param &lt;A&gt;      the type of the first stage's value.
+   * @param &lt;B&gt;      the type of the second stage's value.
+   * @param &lt;C&gt;      the type of the third stage's value.
+   * @param &lt;D&gt;      the type of the fourth stage's value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.1.0
+   */
   public static &lt;R, A, B, C, D&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c, CompletionStage&lt;D&gt; d,
       Function4&lt;A, B, C, D, R&gt; function) {
-<span class="fc" id="L222">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L223">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L224">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L225">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L295">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L296">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L297">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L298">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
 
-<span class="fc" id="L227">    return CompletableFuture.allOf(af, bf, cf, df)</span>
-<span class="fc" id="L228">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
+<span class="fc" id="L300">    return CompletableFuture.allOf(af, bf, cf, df)</span>
+<span class="fc" id="L301">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
   }
 
+
+  /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param e        the fifth stage.
+   * @param function the combining function.
+   * @param &lt;R&gt;      the type of the combining function's return value.
+   * @param &lt;A&gt;      the type of the first stage's value.
+   * @param &lt;B&gt;      the type of the second stage's value.
+   * @param &lt;C&gt;      the type of the third stage's value.
+   * @param &lt;D&gt;      the type of the fourth stage's value.
+   * @param &lt;E&gt;      the type of the fifth stage's value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.1.0
+   */
   public static &lt;R, A, B, C, D, E&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
       CompletionStage&lt;D&gt; d, CompletionStage&lt;E&gt; e,
       Function5&lt;A, B, C, D, E, R&gt; function) {
-<span class="fc" id="L235">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L236">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L237">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L238">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
-<span class="fc" id="L239">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L327">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L328">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L329">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L330">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L331">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
 
-<span class="fc" id="L241">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
-<span class="fc" id="L242">        .thenApply(ignored -&gt;</span>
-<span class="fc" id="L243">                       function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));</span>
+<span class="fc" id="L333">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
+<span class="fc" id="L334">        .thenApply(ignored -&gt;</span>
+<span class="fc" id="L335">                       function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));</span>
   }
 
   /**
-   * Periodically poll an external resource until it returns a non-empty result.
+   * Polls an external resource periodically until it returns a non-empty result.
    *
-   * &lt;p&gt;The polling task should return Optional.empty() until it becomes available, and then
-   * Optional.of(result). If the polling task throws an exception or returns null, that will cause
-   * the result future to complete exceptionally.
+   * &lt;p&gt; The polling task should return {@code Optional.empty()} until it becomes available, and
+   * then {@code Optional.of(result)}.  If the polling task throws an exception or returns null,
+   * that will cause the result future to complete exceptionally.
    *
-   * &lt;p&gt;Canceling the returned future will cancel the scheduled polling task as well.
+   * &lt;p&gt; Canceling the returned future will cancel the scheduled polling task as well.
    *
-   * &lt;p&gt;Note that on a ScheduledThreadPoolExecutor the polling task might remain allocated for up
-   * to 'frequency' time after completing or being cancelled. If you have lots of polling operations
-   * or a long polling frequency, consider setting removeOnCancelPolicy to true.
+   * &lt;p&gt; Note that on a ScheduledThreadPoolExecutor the polling task might remain allocated for up
+   * to {@code frequency} time after completing or being cancelled.  If you have lots of polling
+   * operations or a long polling frequency, consider setting {@code removeOnCancelPolicy} to true.
    * See {@link java.util.concurrent.ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy(boolean)}.
    *
-   * @param pollingTask the polling task.
-   * @param frequency the frequency to run the polling task at.
-   * @param executorService the executor service to schedule the polling task on.
-   * @return a future completing to the result of the polling task once that becomes available.
+   * @param pollingTask     the polling task
+   * @param frequency       the frequency to run the polling task at
+   * @param executorService the executor service to schedule the polling task on
+   * @param &lt;T&gt;             the type of the result of the polling task, that will be returned when
+   *                        the task succeeds.
+   * @return a future completing to the result of the polling task once that becomes available
    */
   public static &lt;T&gt; CompletableFuture&lt;T&gt; poll(
       final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
       final Duration frequency,
       final ScheduledExecutorService executorService) {
-<span class="fc" id="L269">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
-<span class="fc" id="L270">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
-<span class="fc" id="L271">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
-<span class="fc" id="L272">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
-<span class="fc" id="L273">    return result;</span>
+<span class="fc" id="L363">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L364">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
+<span class="fc" id="L365">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
+<span class="fc" id="L366">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
+<span class="fc" id="L367">    return result;</span>
   }
 
   private static &lt;T&gt; void pollTask(
       final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
       final CompletableFuture&lt;T&gt; resultFuture) {
     try {
-<span class="fc" id="L280">      pollingTask.get().ifPresent(resultFuture::complete);</span>
-<span class="fc" id="L281">    } catch (Exception ex) {</span>
-<span class="fc" id="L282">      resultFuture.completeExceptionally(ex);</span>
-<span class="fc" id="L283">    }</span>
-<span class="fc" id="L284">  }</span>
+<span class="fc" id="L374">      pollingTask.get().ifPresent(resultFuture::complete);</span>
+<span class="fc" id="L375">    } catch (Exception ex) {</span>
+<span class="fc" id="L376">      resultFuture.completeExceptionally(ex);</span>
+<span class="fc" id="L377">    }</span>
+<span class="fc" id="L378">  }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

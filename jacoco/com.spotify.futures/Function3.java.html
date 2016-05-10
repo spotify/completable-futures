@@ -19,48 +19,50 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Represents a function that accepts three arguments and produces a result.
- * This is the three-arity specialization of {@link Function}.
+ * Represents a function that accepts three arguments and produces a result.  This is the
+ * three-arity specialization of {@link Function}.
  *
- * &lt;p&gt;This is a &lt;a href=&quot;package-summary.html&quot;&gt;functional interface&lt;/a&gt;
- * whose functional method is {@link #apply(Object, Object, Object)}.
+ * &lt;p&gt; This is a functional interface whose functional method is
+ * {@link #apply(Object, Object, Object)}.
  *
  * @param &lt;A&gt; the type of the first argument to the function
  * @param &lt;B&gt; the type of the second argument to the function
  * @param &lt;C&gt; the type of the third argument to the function
  * @param &lt;R&gt; the type of the result of the function
- *
  * @see Function
+ * @since 0.1.0
  */
 @FunctionalInterface
 public interface Function3&lt;A, B, C, R&gt; {
 
-    /**
-     * Applies this function to the given arguments.
-     *
-     * @param a the first function argument
-     * @param b the second function argument
-     * @param c the third function argument
-     * @return the function result
-     */
-    R apply(A a, B b, C c);
+  /**
+   * Applies this function to the given arguments.
+   *
+   * @param a the first function argument
+   * @param b the second function argument
+   * @param c the third function argument
+   * @return the function result
+   * @since 0.1.0
+   */
+  R apply(A a, B b, C c);
 
-    /**
-     * Returns a composed function that first applies this function to
-     * its input, and then applies the {@code after} function to the result.
-     * If evaluation of either function throws an exception, it is relayed to
-     * the caller of the composed function.
-     *
-     * @param &lt;V&gt; the type of output of the {@code after} function, and of the
-     *           composed function
-     * @param after the function to apply after this function is applied
-     * @return a composed function that first applies this function and then
-     * applies the {@code after} function
-     * @throws NullPointerException if after is null
-     */
-    default &lt;V&gt; Function3&lt;A, B, C, V&gt; andThen(Function&lt;? super R, ? extends V&gt; after) {
-<span class="fc" id="L62">        Objects.requireNonNull(after);</span>
-<span class="fc" id="L63">        return (A a, B b, C c) -&gt; after.apply(apply(a, b, c));</span>
-    }
+  /**
+   * Returns a composed function that first applies this function to
+   * its input, and then applies the {@code after} function to the result.
+   * If evaluation of either function throws an exception, it is relayed to
+   * the caller of the composed function.
+   *
+   * @param &lt;V&gt;   the type of output of the {@code after} function, and of the
+   *              composed function
+   * @param after the function to apply after this function is applied
+   * @return a composed function that first applies this function and then
+   * applies the {@code after} function
+   * @throws NullPointerException if after is null
+   * @since 0.1.0
+   */
+  default &lt;V&gt; Function3&lt;A, B, C, V&gt; andThen(Function&lt;? super R, ? extends V&gt; after) {
+<span class="fc" id="L64">    Objects.requireNonNull(after);</span>
+<span class="fc" id="L65">    return (A a, B b, C c) -&gt; after.apply(apply(a, b, c));</span>
+  }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
