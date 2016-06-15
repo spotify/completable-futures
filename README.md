@@ -38,6 +38,20 @@ List<CompletableFuture<String>> futures = asList(completedFuture("a"), completed
 CompletableFuture<List<String>> joined = CompletableFutures.allAsList(futures);
 ```
 
+#### successfulAsList
+
+Works like `allAsList`, but futures that fail will not fail the joined future. Instead, the
+defaultValueMapper function will be called once for each failed future and value returned will be
+put in the resulting list on the place corresponding to the failed future. The default value
+returned by the function may be anything, such as `null` or `Optional.empty()`.
+
+```java
+List<CompletableFuture<String>> input = asList(
+    completedFuture("a"),
+    exceptionallyCompletedFuture(new RuntimeException("boom")));
+CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, t -> "default");
+```
+
 #### joinList
 
 `joinList` is a stream collector that combines multiple futures into a list. This is handy if you
