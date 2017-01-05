@@ -62,19 +62,21 @@ public final class CompletableFutures {
    * @since 0.1.0
    */
   public static <T> CompletableFuture<List<T>> allAsList(
-      List<? extends CompletionStage<? extends T>> stages) {
+          final List<? extends CompletionStage<? extends T>> stages) {
     // We use traditional for-loops instead of streams here for performance reasons,
     // see AllAsListBenchmark
+    final int size = stages.size();
 
     @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<? extends T>[] all = new CompletableFuture[stages.size()];
-    for (int i = 0; i < stages.size(); i++) {
+    final CompletableFuture<? extends T>[] all = new CompletableFuture[size];
+    for (int i = 0; i < size; i++) {
       all[i] = stages.get(i).toCompletableFuture();
     }
     return CompletableFuture.allOf(all)
         .thenApply(ignored -> {
-          final List<T> result = new ArrayList<>(all.length);
-          for (int i = 0; i < all.length; i++) {
+          final int length = all.length;
+          final List<T> result = new ArrayList<>(length);
+          for (int i = 0; i < length; i++) {
             result.add(all[i].join());
           }
           return result;
