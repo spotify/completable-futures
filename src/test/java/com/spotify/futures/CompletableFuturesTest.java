@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.combine;
+import static com.spotify.futures.CompletableFutures.compose;
 import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
@@ -487,8 +488,154 @@ public class CompletableFuturesTest {
         completedFuture("a"), completedFuture("b"), completedFuture("c"),
         completedFuture("d"),
         incompleteFuture(),
-            (a, b, c, d, e) -> a + b + c + d + e);
+        (a, b, c, d, e) -> a + b + c + d + e);
     exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose2_completed() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        (a, b) -> completedFuture(a + b));
+
+    assertThat(future, completesTo("ab"));
+  }
+
+  @Test
+  public void compose2_incomplete() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        incompleteFuture(),
+        (a, b) -> completedFuture(a + b));
+
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose2_exceptional() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b) -> completedFuture(a + b));
+
+    exception.expectCause(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose3_completed() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        (a, b, c) -> completedFuture(a + b + c));
+
+    assertThat(future, completesTo("abc"));
+  }
+
+  @Test
+  public void compose3_incomplete() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        incompleteFuture(),
+        (a, b, c) -> completedFuture(a + b + c));
+
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose3_exceptional() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b, c) -> completedFuture(a + b + c));
+
+    exception.expectCause(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose4_completed() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        (a, b, c, d) -> completedFuture(a + b + c + d));
+
+    assertThat(future, completesTo("abcd"));
+  }
+
+  @Test
+  public void compose4_incomplete() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        incompleteFuture(),
+        (a, b, c, d) -> completedFuture(a + b + c + d));
+
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose4_exceptional() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b, c, d) -> completedFuture(a + b + c + d));
+
+    exception.expectCause(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose5_completed() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        completedFuture("e"),
+        (a, b, c, d, e) -> completedFuture(a + b + c + d + e));
+
+    assertThat(future, completesTo("abcde"));
+  }
+
+  @Test
+  public void compose5_incomplete() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        incompleteFuture(),
+        (a, b, c, d, e) -> completedFuture(a + b + c + d + e));
+
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void compose5_exceptional() throws Exception {
+    final CompletionStage<String> future = compose(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b, c, d, e) -> completedFuture(a + b + c + d + e));
+
+    exception.expectCause(isA(IllegalStateException.class));
     getCompleted(future);
   }
 
