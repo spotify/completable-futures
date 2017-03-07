@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.combine;
-import static com.spotify.futures.CompletableFutures.compose;
+import static com.spotify.futures.CompletableFutures.combineFutures;
 import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
@@ -494,8 +494,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose2_completed() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures2_completed() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         (a, b) -> completedFuture(a + b));
@@ -504,8 +504,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose2_incomplete() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures2_incomplete() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         incompleteFuture(),
         (a, b) -> completedFuture(a + b));
@@ -515,8 +515,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose2_exceptional() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures2_exceptional() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         exceptionallyCompletedFuture(new IllegalStateException()),
         (a, b) -> completedFuture(a + b));
@@ -526,8 +526,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose3_completed() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures3_completed() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),
@@ -537,8 +537,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose3_incomplete() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures3_incomplete() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         incompleteFuture(),
@@ -549,8 +549,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose3_exceptional() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures3_exceptional() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         exceptionallyCompletedFuture(new IllegalStateException()),
@@ -561,8 +561,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose4_completed() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures4_completed() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),
@@ -573,8 +573,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose4_incomplete() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures4_incomplete() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),
@@ -586,8 +586,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose4_exceptional() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures4_exceptional() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),
@@ -599,8 +599,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose5_completed() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures5_completed() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),
@@ -612,8 +612,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose5_incomplete() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures5_incomplete() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),
@@ -626,8 +626,8 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void compose5_exceptional() throws Exception {
-    final CompletionStage<String> future = compose(
+  public void combineFutures5_exceptional() throws Exception {
+    final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
         completedFuture("c"),

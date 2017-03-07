@@ -371,7 +371,7 @@ public final class CompletableFutures {
    * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
    * do not interoperate with CompletableFuture
    */
-  public static <R, A, B> CompletionStage<R> compose(
+  public static <R, A, B> CompletionStage<R> combineFutures(
       CompletionStage<A> a,
       CompletionStage<B> b,
       BiFunction<A, B, CompletionStage<R>> function) {
@@ -397,7 +397,7 @@ public final class CompletableFutures {
    * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
    * do not interoperate with CompletableFuture
    */
-  public static <R, A, B, C> CompletionStage<R> compose(
+  public static <R, A, B, C> CompletionStage<R> combineFutures(
       CompletionStage<A> a,
       CompletionStage<B> b,
       CompletionStage<C> c,
@@ -429,7 +429,7 @@ public final class CompletableFutures {
    * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
    * do not interoperate with CompletableFuture
    */
-  public static <R, A, B, C, D> CompletionStage<R> compose(
+  public static <R, A, B, C, D> CompletionStage<R> combineFutures(
       CompletionStage<A> a,
       CompletionStage<B> b,
       CompletionStage<C> c,
@@ -463,7 +463,7 @@ public final class CompletableFutures {
    * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
    * do not interoperate with CompletableFuture
    */
-  public static <R, A, B, C, D, E> CompletionStage<R> compose(
+  public static <R, A, B, C, D, E> CompletionStage<R> combineFutures(
       CompletionStage<A> a,
       CompletionStage<B> b,
       CompletionStage<C> c,
