@@ -368,6 +368,8 @@ public final class CompletableFutures {
    * @param <A>      the type of the first stage's value.
    * @param <B>      the type of the second stage's value.
    * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
    */
   public static <R, A, B> CompletionStage<R> compose(
       CompletionStage<A> a,
@@ -392,6 +394,8 @@ public final class CompletableFutures {
    * @param <B>      the type of the second stage's value.
    * @param <C>      the type of the third stage's value.
    * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
    */
   public static <R, A, B, C> CompletionStage<R> compose(
       CompletionStage<A> a,
@@ -422,6 +426,8 @@ public final class CompletableFutures {
    * @param <C>      the type of the third stage's value.
    * @param <D>      the type of the fourth stage's value.
    * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
    */
   public static <R, A, B, C, D> CompletionStage<R> compose(
       CompletionStage<A> a,
@@ -454,6 +460,8 @@ public final class CompletableFutures {
    * @param <D>      the type of the fourth stage's value.
    * @param <E>      the type of the fifth stage's value.
    * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
    */
   public static <R, A, B, C, D, E> CompletionStage<R> compose(
       CompletionStage<A> a,
