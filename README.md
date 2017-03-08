@@ -75,15 +75,15 @@ CompletableFutures.combine(f1, f2, f3, f4, (a, b, c, d) -> a + b + c + d);
 CompletableFutures.combine(f1, f2, f3, f4, f5, (a, b, c, d, e) -> a + b + c + d + e);
 ```
 
-#### compose
+#### combineFutures
 
-If you want to combine multiple futures into another future, use `compose`:
+If you want to combine multiple futures into another future, use `combineFutures`:
 
 ```java
-CompletableFutures.compose(f1, f2, (a, b) -> completedFuture(a + b));
-CompletableFutures.compose(f1, f2, f3, (a, b, c) -> completedFuture(a + b + c));
-CompletableFutures.compose(f1, f2, f3, f4, (a, b, c, d) -> completedFuture(a + b + c + d));
-CompletableFutures.compose(f1, f2, f3, f4, f5, (a, b, c, d, e) -> completedFuture(a + b + c + d + e));
+CompletableFutures.combineFutures(f1, f2, (a, b) -> completedFuture(a + b));
+CompletableFutures.combineFutures(f1, f2, f3, (a, b, c) -> completedFuture(a + b + c));
+CompletableFutures.combineFutures(f1, f2, f3, f4, (a, b, c, d) -> completedFuture(a + b + c + d));
+CompletableFutures.combineFutures(f1, f2, f3, f4, f5, (a, b, c, d, e) -> completedFuture(a + b + c + d + e));
 ```
 
 ### Scheduling
