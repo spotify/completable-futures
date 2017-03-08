@@ -363,7 +363,7 @@ public final class CompletableFutures {
    *
    * @param a        the first stage.
    * @param b        the second stage.
-   * @param function the composing function.
+   * @param function the combining function.
    * @param <R>      the type of the composed {@link CompletionStage}.
    * @param <A>      the type of the first stage's value.
    * @param <B>      the type of the second stage's value.
@@ -388,7 +388,7 @@ public final class CompletableFutures {
    * @param a        the first stage.
    * @param b        the second stage.
    * @param c        the third stage.
-   * @param function the composing function.
+   * @param function the combining function.
    * @param <R>      the type of the composed {@link CompletionStage}.
    * @param <A>      the type of the first stage's value.
    * @param <B>      the type of the second stage's value.
@@ -419,7 +419,7 @@ public final class CompletableFutures {
    * @param b        the second stage.
    * @param c        the third stage.
    * @param d        the fourth stage.
-   * @param function the composing function.
+   * @param function the combining function.
    * @param <R>      the type of the composed {@link CompletionStage}.
    * @param <A>      the type of the first stage's value.
    * @param <B>      the type of the second stage's value.
@@ -452,7 +452,7 @@ public final class CompletableFutures {
    * @param c        the third stage.
    * @param d        the fourth stage.
    * @param e        the fifth stage.
-   * @param function the composing function.
+   * @param function the combining function.
    * @param <R>      the type of the composed {@link CompletionStage}.
    * @param <A>      the type of the first stage's value.
    * @param <B>      the type of the second stage's value.
