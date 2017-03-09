@@ -325,7 +325,6 @@ public final class CompletableFutures {
         .thenApply(ignored -> function.apply(af.join(), bf.join(), cf.join(), df.join()));
   }
 
-
   /**
    * Combines multiple stages by applying a function.
    *
@@ -357,6 +356,132 @@ public final class CompletableFutures {
     return CompletableFuture.allOf(af, bf, cf, df, ef)
         .thenApply(ignored ->
                        function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));
+  }
+
+  /**
+   * Composes multiple stages into another stage using a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param function the combining function.
+   * @param <R>      the type of the composed {@link CompletionStage}.
+   * @param <A>      the type of the first stage's value.
+   * @param <B>      the type of the second stage's value.
+   * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
+   */
+  public static <R, A, B> CompletionStage<R> combineFutures(
+      CompletionStage<A> a,
+      CompletionStage<B> b,
+      BiFunction<A, B, CompletionStage<R>> function) {
+    final CompletableFuture<A> af = a.toCompletableFuture();
+    final CompletableFuture<B> bf = b.toCompletableFuture();
+
+    return CompletableFuture.allOf(af, bf)
+        .thenCompose(ignored -> function.apply(af.join(), bf.join()));
+  }
+
+  /**
+   * Composes multiple stages into another stage using a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param function the combining function.
+   * @param <R>      the type of the composed {@link CompletionStage}.
+   * @param <A>      the type of the first stage's value.
+   * @param <B>      the type of the second stage's value.
+   * @param <C>      the type of the third stage's value.
+   * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
+   */
+  public static <R, A, B, C> CompletionStage<R> combineFutures(
+      CompletionStage<A> a,
+      CompletionStage<B> b,
+      CompletionStage<C> c,
+      Function3<A, B, C, CompletionStage<R>> function) {
+    final CompletableFuture<A> af = a.toCompletableFuture();
+    final CompletableFuture<B> bf = b.toCompletableFuture();
+    final CompletableFuture<C> cf = c.toCompletableFuture();
+
+    return CompletableFuture.allOf(af, bf, cf)
+        .thenCompose(ignored -> function.apply(af.join(),
+                                               bf.join(),
+                                               cf.join()));
+  }
+
+  /**
+   * Composes multiple stages into another stage using a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param function the combining function.
+   * @param <R>      the type of the composed {@link CompletionStage}.
+   * @param <A>      the type of the first stage's value.
+   * @param <B>      the type of the second stage's value.
+   * @param <C>      the type of the third stage's value.
+   * @param <D>      the type of the fourth stage's value.
+   * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
+   */
+  public static <R, A, B, C, D> CompletionStage<R> combineFutures(
+      CompletionStage<A> a,
+      CompletionStage<B> b,
+      CompletionStage<C> c,
+      CompletionStage<D> d,
+      Function4<A, B, C, D, CompletionStage<R>> function) {
+    final CompletableFuture<A> af = a.toCompletableFuture();
+    final CompletableFuture<B> bf = b.toCompletableFuture();
+    final CompletableFuture<C> cf = c.toCompletableFuture();
+    final CompletableFuture<D> df = d.toCompletableFuture();
+
+    return CompletableFuture.allOf(af, bf, cf, df)
+        .thenCompose(ignored -> function.apply(af.join(), bf.join(), cf.join(), df.join()));
+  }
+
+  /**
+   * Composes multiple stages into another stage using a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param e        the fifth stage.
+   * @param function the combining function.
+   * @param <R>      the type of the composed {@link CompletionStage}.
+   * @param <A>      the type of the first stage's value.
+   * @param <B>      the type of the second stage's value.
+   * @param <C>      the type of the third stage's value.
+   * @param <D>      the type of the fourth stage's value.
+   * @param <E>      the type of the fifth stage's value.
+   * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
+   */
+  public static <R, A, B, C, D, E> CompletionStage<R> combineFutures(
+      CompletionStage<A> a,
+      CompletionStage<B> b,
+      CompletionStage<C> c,
+      CompletionStage<D> d,
+      CompletionStage<E> e,
+      Function5<A, B, C, D, E, CompletionStage<R>> function) {
+    final CompletableFuture<A> af = a.toCompletableFuture();
+    final CompletableFuture<B> bf = b.toCompletableFuture();
+    final CompletableFuture<C> cf = c.toCompletableFuture();
+    final CompletableFuture<D> df = d.toCompletableFuture();
+    final CompletableFuture<E> ef = e.toCompletableFuture();
+
+    return CompletableFuture.allOf(af, bf, cf, df, ef)
+        .thenCompose(ignored -> function.apply(af.join(),
+                                               bf.join(),
+                                               cf.join(),
+                                               df.join(),
+                                               ef.join()));
   }
 
   /**
