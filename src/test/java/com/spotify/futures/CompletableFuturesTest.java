@@ -15,6 +15,7 @@
  */
 package com.spotify.futures;
 
+import java.util.concurrent.CancellationException;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -42,6 +43,7 @@ import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
 import static com.spotify.futures.CompletableFutures.getCompleted;
+import static com.spotify.futures.CompletableFutures.getException;
 import static com.spotify.futures.CompletableFutures.handleCompose;
 import static com.spotify.futures.CompletableFutures.joinList;
 import static com.spotify.futures.CompletableFutures.poll;
@@ -166,6 +168,35 @@ public class CompletableFuturesTest {
 
     exception.expect(IllegalStateException.class);
     getCompleted(future);
+  }
+
+  @Test
+  public void getException_completedExceptionally() throws Exception {
+    final Exception ex = new Exception("boom");
+    final CompletionStage<String> future = exceptionallyCompletedFuture(ex);
+    assertThat(getException(future), is(ex));
+  }
+
+  @Test
+  public void getException_completedNormally() throws Exception {
+    final CompletionStage<String> future = completedFuture("hello");
+    exception.expect(IllegalStateException.class);
+    getException(future);
+  }
+
+  @Test
+  public void getException_pending() throws Exception {
+    final CompletionStage<String> future = new CompletableFuture<>();
+    exception.expect(IllegalStateException.class);
+    getException(future);
+  }
+
+  @Test
+  public void getException_cancelled() throws Exception {
+    final CompletionStage<String> future = new CompletableFuture<>();
+    future.toCompletableFuture().cancel(true);
+    exception.expect(CancellationException.class);
+    getException(future);
   }
 
   @Test
