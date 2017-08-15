@@ -15,7 +15,6 @@
  */
 package com.spotify.futures;
 
-import java.util.concurrent.CancellationException;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -29,6 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
@@ -63,6 +63,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -163,6 +164,12 @@ public class CompletableFuturesTest {
   }
 
   @Test
+  public void getCompleted_nilResult() throws Exception {
+    final CompletableFuture<Void> future = completedFuture(null);
+    assertNull(getCompleted(future));
+  }
+
+  @Test
   public void getCompleted_pending() throws Exception {
     final CompletionStage<String> future = new CompletableFuture<>();
 
@@ -197,6 +204,13 @@ public class CompletableFuturesTest {
     future.toCompletableFuture().cancel(true);
     exception.expect(CancellationException.class);
     getException(future);
+  }
+
+  @Test
+  public void getException_returnsNullIfImplementationDoesNotThrow() throws Exception {
+    final CompletableFuture<Void> future = new NonThrowingFuture<>();
+    future.completeExceptionally(new NullPointerException());
+    assertNull(getException(future));
   }
 
   @Test
@@ -776,6 +790,16 @@ public class CompletableFuturesTest {
         }
       }
     };
+  }
+
+  private static class NonThrowingFuture<T> extends CompletableFuture<T> {
+    @Override
+    public T join() {
+      if (this.isCompletedExceptionally()) {
+        return null;
+      }
+      return super.join();
+    }
   }
 
 }
