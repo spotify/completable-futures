@@ -24,8 +24,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Semaphore;
 
-/** Port of ConcurrencyLimiter from futures-extra for use with CompletionStages */
-public class ConcurrencyLimiter<T> {
+/**
+ * {@link ConcurrencyReducer} is used to queue tasks which will be
+ * executed in a manner reducing the number of concurrent tasks.
+ *
+ * Note: This is a port of ConcurrencyLimiter from futures-extra for use with CompletionStages
+ */
+public class ConcurrencyReducer<T> {
 
   private final BlockingQueue<Job<T>> queue;
   private final Semaphore limit;
@@ -33,7 +38,7 @@ public class ConcurrencyLimiter<T> {
 
   private final int maxConcurrency;
 
-  private ConcurrencyLimiter(int maxConcurrency, int maxQueueSize) {
+  private ConcurrencyReducer(int maxConcurrency, int maxQueueSize) {
     this.maxConcurrency = maxConcurrency;
     this.maxQueueSize = maxQueueSize;
     if (maxConcurrency <= 0) {
@@ -49,12 +54,12 @@ public class ConcurrencyLimiter<T> {
 
   /**
    * @param maxConcurrency maximum number of futures in progress,
-   * @param maxQueueSize maximum number of jobs in queue. This is a soft bound and may be
-   *     temporarily exceeded if add() is called concurrently.
+   * @param maxQueueSize   maximum number of jobs in queue. This is a soft bound and may be
+   *                       temporarily exceeded if add() is called concurrently.
    * @return a new concurrency limiter
    */
-  public static <T> ConcurrencyLimiter<T> create(int maxConcurrency, int maxQueueSize) {
-    return new ConcurrencyLimiter<>(maxConcurrency, maxQueueSize);
+  public static <T> ConcurrencyReducer<T> create(int maxConcurrency, int maxQueueSize) {
+    return new ConcurrencyReducer<>(maxConcurrency, maxQueueSize);
   }
 
   /**
@@ -63,10 +68,10 @@ public class ConcurrencyLimiter<T> {
    *
    * @param callable - a function that creates a future.
    * @return a proxy future that completes with the future created by the input function. This
-   *     future will be immediately failed with {@link CapacityReachedException} if the soft queue
-   *     size limit is exceeded.
+   * future will be immediately failed with {@link CapacityReachedException} if the soft queue
+   * size limit is exceeded.
    */
-  public CompletableFuture<T> add(Callable<? extends CompletionStage<T>> callable) {
+  public CompletableFuture<T> add(final Callable<? extends CompletionStage<T>> callable) {
     requireNonNull(callable);
     final CompletableFuture<T> response = new CompletableFuture<>();
     final Job<T> job = new Job<>(callable, response);
@@ -78,22 +83,30 @@ public class ConcurrencyLimiter<T> {
     return response;
   }
 
-  /** @return the number of callables that are queued up and haven't started yet. */
+  /**
+   * @return the number of callables that are queued up and haven't started yet.
+   */
   public int numQueued() {
     return queue.size();
   }
 
-  /** @return the number of currently active futures that have not yet completed. */
+  /**
+   * @return the number of currently active futures that have not yet completed.
+   */
   public int numActive() {
     return maxConcurrency - limit.availablePermits();
   }
 
-  /** @return the number of additional callables that can be queued before failing. */
+  /**
+   * @return the number of additional callables that can be queued before failing.
+   */
   public int remainingQueueCapacity() {
     return queue.remainingCapacity();
   }
 
-  /** @return the number of additional callables that can be run without queueing. */
+  /**
+   * @return the number of additional callables that can be run without queueing.
+   */
   public int remainingActiveCapacity() {
     return limit.availablePermits();
   }
@@ -131,8 +144,8 @@ public class ConcurrencyLimiter<T> {
     }
   }
 
-  private void invoke(
-      final CompletableFuture<T> response, Callable<? extends CompletionStage<T>> callable) {
+  private void invoke(final CompletableFuture<T> response,
+                      final Callable<? extends CompletionStage<T>> callable) {
     final CompletionStage<T> future;
     try {
       future = callable.call();
@@ -162,6 +175,7 @@ public class ConcurrencyLimiter<T> {
   }
 
   private static class Job<T> {
+
     private final Callable<? extends CompletionStage<T>> callable;
     private final CompletableFuture<T> response;
 

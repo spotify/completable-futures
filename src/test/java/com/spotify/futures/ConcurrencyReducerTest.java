@@ -32,27 +32,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.Test;
 
-public class ConcurrencyLimiterTest {
+public class ConcurrencyReducerTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testTooLowConcurrency() throws Exception {
-    ConcurrencyLimiter.create(0, 10);
+    ConcurrencyReducer.create(0, 10);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testTooLowQueueSize() throws Exception {
-    ConcurrencyLimiter.create(10, 0);
+    ConcurrencyReducer.create(10, 0);
   }
 
   @Test(expected = NullPointerException.class)
   public void testNullJob() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(1, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     limiter.add(null);
   }
 
   @Test
   public void testJobReturnsNull() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(1, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     final CompletableFuture<String> response = limiter.add(job(null));
     assertTrue(response.isDone());
     final Throwable exception = getException(response);
@@ -61,7 +61,7 @@ public class ConcurrencyLimiterTest {
 
   @Test
   public void testJobThrows() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(1, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     final CompletableFuture<String> response =
         limiter.add(() -> {
               throw new IllegalStateException();
@@ -74,7 +74,7 @@ public class ConcurrencyLimiterTest {
 
   @Test
   public void testJobReturnsFailure() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(1, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     final CompletionStage<String> response =
         limiter.add(job(CompletableFutures.exceptionallyCompletedFuture(new IllegalStateException())));
 
@@ -85,7 +85,7 @@ public class ConcurrencyLimiterTest {
 
   @Test
   public void testCancellation() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(2, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(2, 10);
     final CompletableFuture<String> request1 = new CompletableFuture<>();
     final CompletableFuture<String> request2 = new CompletableFuture<>();
 
@@ -131,7 +131,7 @@ public class ConcurrencyLimiterTest {
 
   @Test
   public void testSimple() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(2, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(2, 10);
     final CompletableFuture<String> request1 = new CompletableFuture<>();
     final CompletableFuture<String> request2 = new CompletableFuture<>();
     final CompletableFuture<String> request3 = new CompletableFuture<>();
@@ -172,7 +172,7 @@ public class ConcurrencyLimiterTest {
     final AtomicInteger maxCount = new AtomicInteger();
     final int queueSize = 11;
     final int maxConcurrency = 10;
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(maxConcurrency, queueSize);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(maxConcurrency, queueSize);
     List<CountingJob> jobs = new ArrayList<>();
     List<CompletableFuture<String>> responses = new ArrayList<>();
     for (int i = 0; i < queueSize; i++) {
@@ -200,7 +200,7 @@ public class ConcurrencyLimiterTest {
 
   @Test
   public void testQueueSize() throws Exception {
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(10, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(10, 10);
     for (int i = 0; i < 20; i++) {
       limiter.add(job(new CompletableFuture<>()));
     }
@@ -208,14 +208,14 @@ public class ConcurrencyLimiterTest {
     final CompletableFuture<String> future = limiter.add(job(new CompletableFuture<>()));
     assertTrue(future.isDone());
     final Throwable e = getException(future);
-    assertThat(e, instanceOf(ConcurrencyLimiter.CapacityReachedException.class));
+    assertThat(e, instanceOf(ConcurrencyReducer.CapacityReachedException.class));
   }
 
   @Test
   public void testQueueSizeCounter() throws Exception {
     final CompletableFuture<String> future = new CompletableFuture<>();
 
-    final ConcurrencyLimiter<String> limiter = ConcurrencyLimiter.create(10, 10);
+    final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(10, 10);
     for (int i = 0; i < 20; i++) {
       limiter.add(job(future));
     }
