@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -181,6 +182,29 @@ public final class CompletableFutures {
     CompletableFuture<T> future = stage.toCompletableFuture();
     checkCompleted(future);
     return future.join();
+  }
+
+  /**
+   * Gets the exception from an exceptionally completed future
+   * @param stage an exceptionally completed {@link CompletionStage}
+   * @param <T>   the type of the value that the stage completes into
+   * @return the exception the stage has completed with
+   * @throws IllegalStateException if the stage is not completed exceptionally
+   * @throws CancellationException if the stage was cancelled
+   * @throws UnsupportedOperationException if the {@link CompletionStage} does not
+   * support the {@link CompletionStage#toCompletableFuture()} operation
+   */
+  public static <T> Throwable getException(CompletionStage<T> stage) {
+    CompletableFuture<T> future = stage.toCompletableFuture();
+    if (!future.isCompletedExceptionally()) {
+      throw new IllegalStateException("future was not completed exceptionally");
+    }
+    try {
+      future.join();
+      return null;
+    } catch (CompletionException x) {
+      return x.getCause();
+    }
   }
 
   /**
