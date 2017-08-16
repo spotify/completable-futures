@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -41,8 +42,8 @@ import static java.util.stream.Collectors.toList;
  */
 public final class CompletableFutures {
 
-<span class="fc" id="L44">  private CompletableFutures() {</span>
-<span class="fc" id="L45">    throw new IllegalAccessError(&quot;This class must not be instantiated.&quot;);</span>
+<span class="fc" id="L45">  private CompletableFutures() {</span>
+<span class="fc" id="L46">    throw new IllegalAccessError(&quot;This class must not be instantiated.&quot;);</span>
   }
 
   /**
@@ -67,17 +68,17 @@ public final class CompletableFutures {
     // see AllAsListBenchmark
 
     @SuppressWarnings(&quot;unchecked&quot;) // generic array creation
-<span class="fc" id="L70">    final CompletableFuture&lt;? extends T&gt;[] all = new CompletableFuture[stages.size()];</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">    for (int i = 0; i &lt; stages.size(); i++) {</span>
-<span class="fc" id="L72">      all[i] = stages.get(i).toCompletableFuture();</span>
+<span class="fc" id="L71">    final CompletableFuture&lt;? extends T&gt;[] all = new CompletableFuture[stages.size()];</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">    for (int i = 0; i &lt; stages.size(); i++) {</span>
+<span class="fc" id="L73">      all[i] = stages.get(i).toCompletableFuture();</span>
     }
-<span class="fc" id="L74">    return CompletableFuture.allOf(all)</span>
-<span class="fc" id="L75">        .thenApply(ignored -&gt; {</span>
-<span class="fc" id="L76">          final List&lt;T&gt; result = new ArrayList&lt;&gt;(all.length);</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">          for (int i = 0; i &lt; all.length; i++) {</span>
-<span class="fc" id="L78">            result.add(all[i].join());</span>
+<span class="fc" id="L75">    return CompletableFuture.allOf(all)</span>
+<span class="fc" id="L76">        .thenApply(ignored -&gt; {</span>
+<span class="fc" id="L77">          final List&lt;T&gt; result = new ArrayList&lt;&gt;(all.length);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">          for (int i = 0; i &lt; all.length; i++) {</span>
+<span class="fc" id="L79">            result.add(all[i].join());</span>
           }
-<span class="fc" id="L80">          return result;</span>
+<span class="fc" id="L81">          return result;</span>
         });
   }
 
@@ -100,9 +101,9 @@ public final class CompletableFutures {
   public static &lt;T&gt; CompletableFuture&lt;List&lt;T&gt;&gt; successfulAsList(
       List&lt;? extends CompletionStage&lt;T&gt;&gt; stages,
       Function&lt;Throwable, ? extends T&gt; defaultValueMapper) {
-<span class="fc" id="L103">    return stages.stream()</span>
-<span class="fc" id="L104">        .map(f -&gt; f.exceptionally(defaultValueMapper))</span>
-<span class="fc" id="L105">        .collect(joinList());</span>
+<span class="fc" id="L104">    return stages.stream()</span>
+<span class="fc" id="L105">        .map(f -&gt; f.exceptionally(defaultValueMapper))</span>
+<span class="fc" id="L106">        .collect(joinList());</span>
   }
 
   /**
@@ -118,9 +119,9 @@ public final class CompletableFutures {
    * @since 0.1.0
    */
   public static &lt;T&gt; CompletableFuture&lt;T&gt; exceptionallyCompletedFuture(Throwable throwable) {
-<span class="fc" id="L121">    final CompletableFuture&lt;T&gt; future = new CompletableFuture&lt;&gt;();</span>
-<span class="fc" id="L122">    future.completeExceptionally(throwable);</span>
-<span class="fc" id="L123">    return future;</span>
+<span class="fc" id="L122">    final CompletableFuture&lt;T&gt; future = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L123">    future.completeExceptionally(throwable);</span>
+<span class="fc" id="L124">    return future;</span>
   }
 
   /**
@@ -152,7 +153,7 @@ public final class CompletableFutures {
    */
   public static &lt;T, S extends CompletionStage&lt;? extends T&gt;&gt;
   Collector&lt;S, ?, CompletableFuture&lt;List&lt;T&gt;&gt;&gt; joinList() {
-<span class="fc" id="L155">    return collectingAndThen(toList(), CompletableFutures::allAsList);</span>
+<span class="fc" id="L156">    return collectingAndThen(toList(), CompletableFutures::allAsList);</span>
   }
 
   /**
@@ -163,10 +164,10 @@ public final class CompletableFutures {
    * @since 0.1.0
    */
   public static void checkCompleted(CompletionStage&lt;?&gt; stage) {
-<span class="fc bfc" id="L166" title="All 2 branches covered.">    if (!stage.toCompletableFuture().isDone()) {</span>
-<span class="fc" id="L167">      throw new IllegalStateException(&quot;future was not completed&quot;);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">    if (!stage.toCompletableFuture().isDone()) {</span>
+<span class="fc" id="L168">      throw new IllegalStateException(&quot;future was not completed&quot;);</span>
     }
-<span class="fc" id="L169">  }</span>
+<span class="fc" id="L170">  }</span>
 
   /**
    * Gets the value of a completed stage.
@@ -178,9 +179,32 @@ public final class CompletableFutures {
    * @since 0.1.0
    */
   public static &lt;T&gt; T getCompleted(CompletionStage&lt;T&gt; stage) {
-<span class="fc" id="L181">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
-<span class="fc" id="L182">    checkCompleted(future);</span>
-<span class="fc" id="L183">    return future.join();</span>
+<span class="fc" id="L182">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
+<span class="fc" id="L183">    checkCompleted(future);</span>
+<span class="fc" id="L184">    return future.join();</span>
+  }
+
+  /**
+   * Gets the exception from an exceptionally completed future
+   * @param stage an exceptionally completed {@link CompletionStage}
+   * @param &lt;T&gt;   the type of the value that the stage completes into
+   * @return the exception the stage has completed with
+   * @throws IllegalStateException if the stage is not completed exceptionally
+   * @throws CancellationException if the stage was cancelled
+   * @throws UnsupportedOperationException if the {@link CompletionStage} does not
+   * support the {@link CompletionStage#toCompletableFuture()} operation
+   */
+  public static &lt;T&gt; Throwable getException(CompletionStage&lt;T&gt; stage) {
+<span class="fc" id="L198">    CompletableFuture&lt;T&gt; future = stage.toCompletableFuture();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">    if (!future.isCompletedExceptionally()) {</span>
+<span class="fc" id="L200">      throw new IllegalStateException(&quot;future was not completed exceptionally&quot;);</span>
+    }
+    try {
+<span class="fc" id="L203">      future.join();</span>
+<span class="fc" id="L204">      return null;</span>
+<span class="fc" id="L205">    } catch (CompletionException x) {</span>
+<span class="fc" id="L206">      return x.getCause();</span>
+    }
   }
 
   /**
@@ -207,7 +231,7 @@ public final class CompletableFutures {
   public static &lt;T, U&gt; CompletionStage&lt;U&gt; handleCompose(
       CompletionStage&lt;T&gt; stage,
       BiFunction&lt;? super T, Throwable, ? extends CompletionStage&lt;U&gt;&gt; fn) {
-<span class="fc" id="L210">    return dereference(stage.handle(fn));</span>
+<span class="fc" id="L234">    return dereference(stage.handle(fn));</span>
   }
 
   /**
@@ -233,7 +257,7 @@ public final class CompletableFutures {
   public static &lt;T&gt; CompletionStage&lt;T&gt; exceptionallyCompose(
       CompletionStage&lt;T&gt; stage,
       Function&lt;Throwable, ? extends CompletionStage&lt;T&gt;&gt; fn) {
-<span class="fc" id="L236">    return dereference(wrap(stage).exceptionally(fn));</span>
+<span class="fc" id="L260">    return dereference(wrap(stage).exceptionally(fn));</span>
   }
 
   /**
@@ -246,12 +270,12 @@ public final class CompletableFutures {
    */
   public static &lt;T&gt; CompletionStage&lt;T&gt; dereference(
       CompletionStage&lt;? extends CompletionStage&lt;T&gt;&gt; stage) {
-<span class="fc" id="L249">    return stage.thenCompose(Function.identity());</span>
+<span class="fc" id="L273">    return stage.thenCompose(Function.identity());</span>
   }
 
   private static &lt;T&gt; CompletionStage&lt;CompletionStage&lt;T&gt;&gt; wrap(CompletionStage&lt;T&gt; future) {
     //noinspection unchecked
-<span class="fc" id="L254">    return future.thenApply(CompletableFuture::completedFuture);</span>
+<span class="fc" id="L278">    return future.thenApply(CompletableFuture::completedFuture);</span>
   }
 
   /**
@@ -269,7 +293,7 @@ public final class CompletableFutures {
   public static &lt;R, A, B&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b,
       BiFunction&lt;A, B, R&gt; function) {
-<span class="fc" id="L272">    return a.thenCombine(b, function);</span>
+<span class="fc" id="L296">    return a.thenCombine(b, function);</span>
   }
 
   /**
@@ -289,12 +313,12 @@ public final class CompletableFutures {
   public static &lt;R, A, B, C&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
       Function3&lt;A, B, C, R&gt; function) {
-<span class="fc" id="L292">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L293">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L294">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L316">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L317">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L318">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
 
-<span class="fc" id="L296">    return CompletableFuture.allOf(af, bf, cf)</span>
-<span class="fc" id="L297">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join()));</span>
+<span class="fc" id="L320">    return CompletableFuture.allOf(af, bf, cf)</span>
+<span class="fc" id="L321">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join()));</span>
   }
 
   /**
@@ -316,13 +340,13 @@ public final class CompletableFutures {
   public static &lt;R, A, B, C, D&gt; CompletionStage&lt;R&gt; combine(
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c, CompletionStage&lt;D&gt; d,
       Function4&lt;A, B, C, D, R&gt; function) {
-<span class="fc" id="L319">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L320">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L321">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L322">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L343">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L344">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L345">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L346">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
 
-<span class="fc" id="L324">    return CompletableFuture.allOf(af, bf, cf, df)</span>
-<span class="fc" id="L325">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
+<span class="fc" id="L348">    return CompletableFuture.allOf(af, bf, cf, df)</span>
+<span class="fc" id="L349">        .thenApply(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
   }
 
   /**
@@ -347,15 +371,15 @@ public final class CompletableFutures {
       CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
       CompletionStage&lt;D&gt; d, CompletionStage&lt;E&gt; e,
       Function5&lt;A, B, C, D, E, R&gt; function) {
-<span class="fc" id="L350">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L351">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L352">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L353">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
-<span class="fc" id="L354">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L374">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L375">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L376">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L377">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L378">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
 
-<span class="fc" id="L356">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
-<span class="fc" id="L357">        .thenApply(ignored -&gt;</span>
-<span class="fc" id="L358">                       function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));</span>
+<span class="fc" id="L380">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
+<span class="fc" id="L381">        .thenApply(ignored -&gt;</span>
+<span class="fc" id="L382">                       function.apply(af.join(), bf.join(), cf.join(), df.join(), ef.join()));</span>
   }
 
   /**
@@ -375,11 +399,11 @@ public final class CompletableFutures {
       CompletionStage&lt;A&gt; a,
       CompletionStage&lt;B&gt; b,
       BiFunction&lt;A, B, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L378">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L379">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L402">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L403">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
 
-<span class="fc" id="L381">    return CompletableFuture.allOf(af, bf)</span>
-<span class="fc" id="L382">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join()));</span>
+<span class="fc" id="L405">    return CompletableFuture.allOf(af, bf)</span>
+<span class="fc" id="L406">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join()));</span>
   }
 
   /**
@@ -402,14 +426,14 @@ public final class CompletableFutures {
       CompletionStage&lt;B&gt; b,
       CompletionStage&lt;C&gt; c,
       Function3&lt;A, B, C, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L405">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L406">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L407">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L429">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L430">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L431">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
 
-<span class="fc" id="L409">    return CompletableFuture.allOf(af, bf, cf)</span>
-<span class="fc" id="L410">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
-<span class="fc" id="L411">                                               bf.join(),</span>
-<span class="fc" id="L412">                                               cf.join()));</span>
+<span class="fc" id="L433">    return CompletableFuture.allOf(af, bf, cf)</span>
+<span class="fc" id="L434">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
+<span class="fc" id="L435">                                               bf.join(),</span>
+<span class="fc" id="L436">                                               cf.join()));</span>
   }
 
   /**
@@ -435,13 +459,13 @@ public final class CompletableFutures {
       CompletionStage&lt;C&gt; c,
       CompletionStage&lt;D&gt; d,
       Function4&lt;A, B, C, D, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L438">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L439">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L440">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L441">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L462">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L463">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L464">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L465">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
 
-<span class="fc" id="L443">    return CompletableFuture.allOf(af, bf, cf, df)</span>
-<span class="fc" id="L444">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
+<span class="fc" id="L467">    return CompletableFuture.allOf(af, bf, cf, df)</span>
+<span class="fc" id="L468">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
   }
 
   /**
@@ -470,18 +494,18 @@ public final class CompletableFutures {
       CompletionStage&lt;D&gt; d,
       CompletionStage&lt;E&gt; e,
       Function5&lt;A, B, C, D, E, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L473">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L474">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L475">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L476">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
-<span class="fc" id="L477">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L497">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L498">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L499">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L500">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L501">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
 
-<span class="fc" id="L479">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
-<span class="fc" id="L480">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
-<span class="fc" id="L481">                                               bf.join(),</span>
-<span class="fc" id="L482">                                               cf.join(),</span>
-<span class="fc" id="L483">                                               df.join(),</span>
-<span class="fc" id="L484">                                               ef.join()));</span>
+<span class="fc" id="L503">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
+<span class="fc" id="L504">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
+<span class="fc" id="L505">                                               bf.join(),</span>
+<span class="fc" id="L506">                                               cf.join(),</span>
+<span class="fc" id="L507">                                               df.join(),</span>
+<span class="fc" id="L508">                                               ef.join()));</span>
   }
 
   /**
@@ -509,22 +533,22 @@ public final class CompletableFutures {
       final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
       final Duration frequency,
       final ScheduledExecutorService executorService) {
-<span class="fc" id="L512">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
-<span class="fc" id="L513">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
-<span class="fc" id="L514">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
-<span class="fc" id="L515">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
-<span class="fc" id="L516">    return result;</span>
+<span class="fc" id="L536">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L537">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
+<span class="fc" id="L538">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
+<span class="fc" id="L539">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
+<span class="fc" id="L540">    return result;</span>
   }
 
   private static &lt;T&gt; void pollTask(
       final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
       final CompletableFuture&lt;T&gt; resultFuture) {
     try {
-<span class="fc" id="L523">      pollingTask.get().ifPresent(resultFuture::complete);</span>
-<span class="fc" id="L524">    } catch (Exception ex) {</span>
-<span class="fc" id="L525">      resultFuture.completeExceptionally(ex);</span>
-<span class="fc" id="L526">    }</span>
-<span class="fc" id="L527">  }</span>
+<span class="fc" id="L547">      pollingTask.get().ifPresent(resultFuture::complete);</span>
+<span class="fc" id="L548">    } catch (Exception ex) {</span>
+<span class="fc" id="L549">      resultFuture.completeExceptionally(ex);</span>
+<span class="fc" id="L550">    }</span>
+<span class="fc" id="L551">  }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
