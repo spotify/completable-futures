@@ -1,5 +1,8 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 completable-futures,com.spotify.futures,CompletableFutures,0,525,0,8,0,93,0,37,0,33
+completable-futures,com.spotify.futures,ConcurrencyReducer,0,195,0,18,0,57,0,20,0,11
 completable-futures,com.spotify.futures,Function3,0,15,0,0,0,2,0,2,0,2
 completable-futures,com.spotify.futures,Function4,0,16,0,0,0,2,0,2,0,2
 completable-futures,com.spotify.futures,Function5,0,17,0,0,0,2,0,2,0,2
+completable-futures,com.spotify.futures,ConcurrencyReducer.CapacityReachedException,0,4,0,0,0,2,0,1,0,1
+completable-futures,com.spotify.futures,ConcurrencyReducer.Job,0,9,0,0,0,4,0,1,0,1
