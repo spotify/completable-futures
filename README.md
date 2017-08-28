@@ -16,7 +16,7 @@ included as a library in other software. To import it with maven, add this to yo
 <dependency>
     <groupId>com.spotify</groupId>
     <artifactId>completable-futures</artifactId>
-    <version>0.3.0</version>
+    <version>0.3.1</version>
 </dependency>
 ```
 
