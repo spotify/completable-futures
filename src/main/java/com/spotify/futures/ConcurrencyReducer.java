@@ -116,18 +116,16 @@ public class ConcurrencyReducer<T> {
    * and does not acquire a permit from the semaphore
    */
   private Job<T> grabJob() {
-    while (!queue.isEmpty()) {
-      if (!limit.tryAcquire()) {
-        return null;
-      }
-
-      final Job<T> job = queue.poll();
-      if (job != null) {
-        return job;
-      }
-
-      limit.release();
+    if (!limit.tryAcquire()) {
+      return null;
     }
+
+    final Job<T> job = queue.poll();
+    if (job != null) {
+      return job;
+    }
+
+    limit.release();
     return null;
   }
 
