@@ -15,6 +15,7 @@
  */
 package com.spotify.futures;
 
+import java.io.IOException;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -42,6 +43,7 @@ import static com.spotify.futures.CompletableFutures.combineFutures;
 import static com.spotify.futures.CompletableFutures.dereference;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompletedFuture;
 import static com.spotify.futures.CompletableFutures.exceptionallyCompose;
+import static com.spotify.futures.CompletableFutures.completedFutureFrom;
 import static com.spotify.futures.CompletableFutures.getCompleted;
 import static com.spotify.futures.CompletableFutures.getException;
 import static com.spotify.futures.CompletableFutures.handleCompose;
@@ -59,10 +61,12 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -161,6 +165,31 @@ public class CompletableFuturesTest {
     final CompletionStage<String> future = exceptionallyCompletedFuture(ex);
     exception.expectCause(is(ex));
     getCompleted(future);
+  }
+
+  @Test
+  public void fromSupplier_getsValue() throws Exception {
+    final CheckedSupplier<String> supplier = () -> "hello";
+    final CompletionStage<String> future = CompletableFutures.completedFutureFrom(supplier);
+    assertThat(getCompleted(future), is("hello"));
+  }
+
+  @Test
+  public void fromSupplier_exceptionalIfErrorThrown() throws Exception {
+    final CheckedSupplier<String> errorSupplier = () -> {
+      throw new NullPointerException("boom");
+    };
+    final CompletionStage<String> future = CompletableFutures.completedFutureFrom(errorSupplier);
+    assertThat(getException(future), instanceOf(NullPointerException.class));
+  }
+
+  @Test
+  public void fromSupplier_exceptionalIfCheckedExceptionThrown() throws Exception {
+    final CheckedSupplier<String> errorSupplier = () -> {
+      throw new IOException("boom");
+    };
+    final CompletionStage<String> future = CompletableFutures.completedFutureFrom(errorSupplier);
+    assertThat(getException(future), instanceOf(IOException.class));
   }
 
   @Test
@@ -331,7 +360,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void dereference_null() throws Exception {
-    final CompletionStage<Object> dereferenced = dereference(completedFuture(null));
+    final CompletionStage<Object> dereferenced = dereference(completedFutureFrom(null));
 
     exception.expectCause(isA(NullPointerException.class));
     getCompleted(dereferenced);

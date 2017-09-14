@@ -125,6 +125,38 @@ public final class CompletableFutures {
   }
 
   /**
+   * Creates a {@link CompletionStage} from a supplier.
+   * {@link CheckedSupplier#get()} will be called immediately, and the stage
+   * will immediately be successful with the value of the supplier.
+   *
+   * <p> If the supplier throws an {@link Exception} then the future will
+   * complete exceptionally with that exception.
+   *
+   * <p> It could be useful to use this function to wrap functions that should return
+   * a stage but might throw an exception. For example
+   *
+   * <pre>{@code
+   * CompletionStage<Pojo> parseJson(final byte[] bytes) {
+   *   // parse might throw IOException!!
+   *   return completedFuture(() -> jsonParser.parse(bytes));
+   * }
+   * }</pre>
+   *
+   * @param supplier A {@link CheckedSupplier} to supply the value to the future
+   * @param <T> The return type of the supplier
+   * @return A completed
+   * @see CompletableFuture#supplyAsync(Supplier)
+   * @since 0.4.0
+   */
+  public static <T> CompletionStage<T> completedFutureFrom(CheckedSupplier<T> supplier) {
+    try {
+      return CompletableFuture.completedFuture(supplier.get());
+    } catch (Exception ex) {
+      return exceptionallyCompletedFuture(ex);
+    }
+  }
+
+  /**
    * Collect a stream of {@link CompletionStage}s into a single future holding a list of the
    * joined entities.
    *
