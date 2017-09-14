@@ -360,7 +360,7 @@ public class CompletableFuturesTest {
 
   @Test
   public void dereference_null() throws Exception {
-    final CompletionStage<Object> dereferenced = dereference(completedFutureFrom(null));
+    final CompletionStage<Object> dereferenced = dereference(completedFuture(null));
 
     exception.expectCause(isA(NullPointerException.class));
     getCompleted(dereferenced);
