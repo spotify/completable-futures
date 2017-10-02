@@ -66,4 +66,10 @@ public class FunctionsTest {
     f.andThen(null);
   }
 
+  @Test
+  public void function6_andThenNull() {
+    final Function6<String, String, String, String, String, String, Integer> ff = (a, b, c, d, e, f) -> 1;
+    exception.expect(NullPointerException.class);
+    ff.andThen(null);
+  }
 }
