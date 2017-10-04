@@ -383,6 +383,47 @@ public final class CompletableFutures {
   }
 
   /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param e        the fifth stage.
+   * @param f        the sixth stage.
+   * @param function the combining function.
+   * @param &lt;R&gt;      the type of the combining function's return value.
+   * @param &lt;A&gt;      the type of the first stage's value.
+   * @param &lt;B&gt;      the type of the second stage's value.
+   * @param &lt;C&gt;      the type of the third stage's value.
+   * @param &lt;D&gt;      the type of the fourth stage's value.
+   * @param &lt;E&gt;      the type of the fifth stage's value.
+   * @param &lt;F&gt;      the type of the sixth stage's value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.3.2
+   */
+  public static &lt;R, A, B, C, D, E, F&gt; CompletionStage&lt;R&gt; combine(
+      CompletionStage&lt;A&gt; a, CompletionStage&lt;B&gt; b, CompletionStage&lt;C&gt; c,
+      CompletionStage&lt;D&gt; d, CompletionStage&lt;E&gt; e, CompletionStage&lt;F&gt; f,
+      Function6&lt;A, B, C, D, E, F, R&gt; function) {
+<span class="fc" id="L409">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L410">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L411">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L412">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L413">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L414">    final CompletableFuture&lt;F&gt; ff = f.toCompletableFuture();</span>
+
+<span class="fc" id="L416">    return CompletableFuture.allOf(af, bf, cf, df, ef, ff)</span>
+<span class="fc" id="L417">        .thenApply(ignored -&gt;</span>
+<span class="fc" id="L418">                       function.apply(af.join(),</span>
+<span class="fc" id="L419">                                      bf.join(),</span>
+<span class="fc" id="L420">                                      cf.join(),</span>
+<span class="fc" id="L421">                                      df.join(),</span>
+<span class="fc" id="L422">                                      ef.join(),</span>
+<span class="fc" id="L423">                                      ff.join()));</span>
+  }
+
+  /**
    * Composes multiple stages into another stage using a function.
    *
    * @param a        the first stage.
@@ -399,11 +440,11 @@ public final class CompletableFutures {
       CompletionStage&lt;A&gt; a,
       CompletionStage&lt;B&gt; b,
       BiFunction&lt;A, B, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L402">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L403">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L443">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L444">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
 
-<span class="fc" id="L405">    return CompletableFuture.allOf(af, bf)</span>
-<span class="fc" id="L406">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join()));</span>
+<span class="fc" id="L446">    return CompletableFuture.allOf(af, bf)</span>
+<span class="fc" id="L447">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join()));</span>
   }
 
   /**
@@ -426,14 +467,14 @@ public final class CompletableFutures {
       CompletionStage&lt;B&gt; b,
       CompletionStage&lt;C&gt; c,
       Function3&lt;A, B, C, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L429">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L430">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L431">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L470">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L471">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L472">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
 
-<span class="fc" id="L433">    return CompletableFuture.allOf(af, bf, cf)</span>
-<span class="fc" id="L434">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
-<span class="fc" id="L435">                                               bf.join(),</span>
-<span class="fc" id="L436">                                               cf.join()));</span>
+<span class="fc" id="L474">    return CompletableFuture.allOf(af, bf, cf)</span>
+<span class="fc" id="L475">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
+<span class="fc" id="L476">                                               bf.join(),</span>
+<span class="fc" id="L477">                                               cf.join()));</span>
   }
 
   /**
@@ -459,13 +500,13 @@ public final class CompletableFutures {
       CompletionStage&lt;C&gt; c,
       CompletionStage&lt;D&gt; d,
       Function4&lt;A, B, C, D, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L462">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L463">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L464">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L465">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L503">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L504">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L505">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L506">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
 
-<span class="fc" id="L467">    return CompletableFuture.allOf(af, bf, cf, df)</span>
-<span class="fc" id="L468">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
+<span class="fc" id="L508">    return CompletableFuture.allOf(af, bf, cf, df)</span>
+<span class="fc" id="L509">        .thenCompose(ignored -&gt; function.apply(af.join(), bf.join(), cf.join(), df.join()));</span>
   }
 
   /**
@@ -494,18 +535,63 @@ public final class CompletableFutures {
       CompletionStage&lt;D&gt; d,
       CompletionStage&lt;E&gt; e,
       Function5&lt;A, B, C, D, E, CompletionStage&lt;R&gt;&gt; function) {
-<span class="fc" id="L497">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
-<span class="fc" id="L498">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
-<span class="fc" id="L499">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
-<span class="fc" id="L500">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
-<span class="fc" id="L501">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L538">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L539">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L540">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L541">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L542">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
 
-<span class="fc" id="L503">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
-<span class="fc" id="L504">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
-<span class="fc" id="L505">                                               bf.join(),</span>
-<span class="fc" id="L506">                                               cf.join(),</span>
-<span class="fc" id="L507">                                               df.join(),</span>
-<span class="fc" id="L508">                                               ef.join()));</span>
+<span class="fc" id="L544">    return CompletableFuture.allOf(af, bf, cf, df, ef)</span>
+<span class="fc" id="L545">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
+<span class="fc" id="L546">                                               bf.join(),</span>
+<span class="fc" id="L547">                                               cf.join(),</span>
+<span class="fc" id="L548">                                               df.join(),</span>
+<span class="fc" id="L549">                                               ef.join()));</span>
+  }
+
+  /**
+   * Composes multiple stages into another stage using a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param e        the fifth stage.
+   * @param f        the sixth stage.
+   * @param function the combining function.
+   * @param &lt;R&gt;      the type of the composed {@link CompletionStage}.
+   * @param &lt;A&gt;      the type of the first stage's value.
+   * @param &lt;B&gt;      the type of the second stage's value.
+   * @param &lt;C&gt;      the type of the third stage's value.
+   * @param &lt;D&gt;      the type of the fourth stage's value.
+   * @param &lt;E&gt;      the type of the fifth stage's value.
+   * @param &lt;F&gt;      the type of the sixth stage's value.
+   * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
+   */
+  public static &lt;R, A, B, C, D, E, F&gt; CompletionStage&lt;R&gt; combineFutures(
+      CompletionStage&lt;A&gt; a,
+      CompletionStage&lt;B&gt; b,
+      CompletionStage&lt;C&gt; c,
+      CompletionStage&lt;D&gt; d,
+      CompletionStage&lt;E&gt; e,
+      CompletionStage&lt;F&gt; f,
+      Function6&lt;A, B, C, D, E, F, CompletionStage&lt;R&gt;&gt; function) {
+<span class="fc" id="L581">    final CompletableFuture&lt;A&gt; af = a.toCompletableFuture();</span>
+<span class="fc" id="L582">    final CompletableFuture&lt;B&gt; bf = b.toCompletableFuture();</span>
+<span class="fc" id="L583">    final CompletableFuture&lt;C&gt; cf = c.toCompletableFuture();</span>
+<span class="fc" id="L584">    final CompletableFuture&lt;D&gt; df = d.toCompletableFuture();</span>
+<span class="fc" id="L585">    final CompletableFuture&lt;E&gt; ef = e.toCompletableFuture();</span>
+<span class="fc" id="L586">    final CompletableFuture&lt;F&gt; ff = f.toCompletableFuture();</span>
+
+<span class="fc" id="L588">    return CompletableFuture.allOf(af, bf, cf, df, ef, ff)</span>
+<span class="fc" id="L589">        .thenCompose(ignored -&gt; function.apply(af.join(),</span>
+<span class="fc" id="L590">                                               bf.join(),</span>
+<span class="fc" id="L591">                                               cf.join(),</span>
+<span class="fc" id="L592">                                               df.join(),</span>
+<span class="fc" id="L593">                                               ef.join(),</span>
+<span class="fc" id="L594">                                               ff.join()));</span>
   }
 
   /**
@@ -533,22 +619,22 @@ public final class CompletableFutures {
       final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
       final Duration frequency,
       final ScheduledExecutorService executorService) {
-<span class="fc" id="L536">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
-<span class="fc" id="L537">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
-<span class="fc" id="L538">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
-<span class="fc" id="L539">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
-<span class="fc" id="L540">    return result;</span>
+<span class="fc" id="L622">    final CompletableFuture&lt;T&gt; result = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L623">    final ScheduledFuture&lt;?&gt; scheduled = executorService.scheduleAtFixedRate(</span>
+<span class="fc" id="L624">        () -&gt; pollTask(pollingTask, result), 0, frequency.toMillis(), TimeUnit.MILLISECONDS);</span>
+<span class="fc" id="L625">    result.whenComplete((r, ex) -&gt; scheduled.cancel(true));</span>
+<span class="fc" id="L626">    return result;</span>
   }
 
   private static &lt;T&gt; void pollTask(
       final Supplier&lt;Optional&lt;T&gt;&gt; pollingTask,
       final CompletableFuture&lt;T&gt; resultFuture) {
     try {
-<span class="fc" id="L547">      pollingTask.get().ifPresent(resultFuture::complete);</span>
-<span class="fc" id="L548">    } catch (Exception ex) {</span>
-<span class="fc" id="L549">      resultFuture.completeExceptionally(ex);</span>
-<span class="fc" id="L550">    }</span>
-<span class="fc" id="L551">  }</span>
+<span class="fc" id="L633">      pollingTask.get().ifPresent(resultFuture::complete);</span>
+<span class="fc" id="L634">    } catch (Exception ex) {</span>
+<span class="fc" id="L635">      resultFuture.completeExceptionally(ex);</span>
+<span class="fc" id="L636">    }</span>
+<span class="fc" id="L637">  }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
