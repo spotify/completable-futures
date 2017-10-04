@@ -33,7 +33,7 @@ import java.util.function.Function;
  * @param <F> the type of the sixth argument to the function
  * @param <R> the type of the result of the function
  * @see Function
- * @since 0.1.0
+ * @since 0.3.2
  */
 @FunctionalInterface
 public interface Function6<A, B, C, D, E, F, R> {
@@ -45,10 +45,10 @@ public interface Function6<A, B, C, D, E, F, R> {
    * @param b the second function argument
    * @param c the third function argument
    * @param d the fourth function argument
-   * @param e the firth function argument
+   * @param e the fifth function argument
    * @param f the sixth function argument
    * @return the function result
-   * @since 0.1.0
+   * @since 0.3.2
    */
   R apply(A a, B b, C c, D d, E e, F f);
 
@@ -64,7 +64,7 @@ public interface Function6<A, B, C, D, E, F, R> {
    * @return a composed function that first applies this function and then
    * applies the {@code after} function
    * @throws NullPointerException if after is null
-   * @since 0.1.0
+   * @since 0.3.2
    */
   default <V> Function6<A, B, C, D, E, F, V> andThen(Function<? super R, ? extends V> after) {
     Objects.requireNonNull(after);

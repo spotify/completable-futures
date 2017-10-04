@@ -400,7 +400,7 @@ public final class CompletableFutures {
    * @param <E>      the type of the fifth stage's value.
    * @param <F>      the type of the sixth stage's value.
    * @return a stage that completes into the return value of the supplied function.
-   * @since 0.1.0
+   * @since 0.3.2
    */
   public static <R, A, B, C, D, E, F> CompletionStage<R> combine(
       CompletionStage<A> a, CompletionStage<B> b, CompletionStage<C> c,
