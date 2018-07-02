@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Represents a function that accepts five arguments and produces a result.  This is the five-arity
+ * Represents a function that accepts six arguments and produces a result.  This is the six-arity
  * specialization of {@link Function}.
  *
  * <p> This is a functional interface whose functional method is
