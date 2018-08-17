@@ -718,7 +718,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void combineFutures6_completed() throws Exception {
+  public void combineFutures6_completed() {
     final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
@@ -732,7 +732,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void combineFutures6_incomplete() throws Exception {
+  public void combineFutures6_incomplete() {
     final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
@@ -747,7 +747,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void combineFutures6_exceptional() throws Exception {
+  public void combineFutures6_exceptional() {
     final CompletionStage<String> future = combineFutures(
         completedFuture("a"),
         completedFuture("b"),
@@ -756,6 +756,53 @@ public class CompletableFuturesTest {
         completedFuture("e"),
         exceptionallyCompletedFuture(new IllegalStateException()),
         (a, b, c, d, e, f) -> completedFuture(a + b + c + d + e + f));
+
+    exception.expectCause(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void combineFutures7_completed() {
+    final CompletionStage<String> future = combineFutures(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        completedFuture("e"),
+        completedFuture("f"),
+        completedFuture("g"),
+        (a, b, c, d, e, f, g) -> completedFuture(a + b + c + d + e + f + g));
+
+    assertThat(future, completesTo("abcdefg"));
+  }
+
+  @Test
+  public void combineFutures7_incomplete() {
+    final CompletionStage<String> future = combineFutures(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        completedFuture("e"),
+        completedFuture("f"),
+        incompleteFuture(),
+        (a, b, c, d, e, f, g) -> completedFuture(a + b + c + d + e + f + g));
+
+    exception.expect(isA(IllegalStateException.class));
+    getCompleted(future);
+  }
+
+  @Test
+  public void combineFutures7_exceptional() {
+    final CompletionStage<String> future = combineFutures(
+        completedFuture("a"),
+        completedFuture("b"),
+        completedFuture("c"),
+        completedFuture("d"),
+        completedFuture("e"),
+        completedFuture("f"),
+        exceptionallyCompletedFuture(new IllegalStateException()),
+        (a, b, c, d, e, f, g) -> completedFuture(a + b + c + d + e + f + g));
 
     exception.expectCause(isA(IllegalStateException.class));
     getCompleted(future);

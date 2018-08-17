@@ -595,6 +595,56 @@ public final class CompletableFutures {
   }
 
   /**
+   * Composes multiple stages into another stage using a function.
+   *
+   * @param a        the first stage.
+   * @param b        the second stage.
+   * @param c        the third stage.
+   * @param d        the fourth stage.
+   * @param e        the fifth stage.
+   * @param f        the sixth stage.
+   * @param g        the seventh stage
+   * @param function the combining function.
+   * @param <R>      the type of the composed {@link CompletionStage}.
+   * @param <A>      the type of the first stage's value.
+   * @param <B>      the type of the second stage's value.
+   * @param <C>      the type of the third stage's value.
+   * @param <D>      the type of the fourth stage's value.
+   * @param <E>      the type of the fifth stage's value.
+   * @param <F>      the type of the sixth stage's value.
+   * @param <G>      the type of the seventh stage's value
+   * @return a stage that is composed from the input stages using the function.
+   * @throws UnsupportedOperationException if any of the {@link CompletionStage}s
+   * do not interoperate with CompletableFuture
+   */
+  public static <R, A, B, C, D, E, F, G> CompletionStage<R> combineFutures(
+      CompletionStage<A> a,
+      CompletionStage<B> b,
+      CompletionStage<C> c,
+      CompletionStage<D> d,
+      CompletionStage<E> e,
+      CompletionStage<F> f,
+      CompletionStage<G> g,
+      Function7<A, B, C, D, E, F, G, CompletionStage<R>> function) {
+    final CompletableFuture<A> af = a.toCompletableFuture();
+    final CompletableFuture<B> bf = b.toCompletableFuture();
+    final CompletableFuture<C> cf = c.toCompletableFuture();
+    final CompletableFuture<D> df = d.toCompletableFuture();
+    final CompletableFuture<E> ef = e.toCompletableFuture();
+    final CompletableFuture<F> ff = f.toCompletableFuture();
+    final CompletableFuture<G> gf = g.toCompletableFuture();
+
+    return CompletableFuture.allOf(af, bf, cf, df, ef, ff, gf)
+        .thenCompose(ignored -> function.apply(af.join(),
+            bf.join(),
+            cf.join(),
+            df.join(),
+            ef.join(),
+            ff.join(),
+            gf.join()));
+  }
+
+  /**
    * Polls an external resource periodically until it returns a non-empty result.
    *
    * <p> The polling task should return {@code Optional.empty()} until it becomes available, and
