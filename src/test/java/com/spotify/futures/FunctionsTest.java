@@ -78,4 +78,20 @@ public class FunctionsTest {
     exception.expect(NullPointerException.class);
     ff.andThen(null);
   }
+
+  @Test
+  public void function7_andThen() {
+    final Function7<String, String, String, String, String, String, String, Integer> ff =
+        (a, b, c, d, e, f, g) -> 1;
+    assertThat(ff.andThen(i -> i+1).apply("", "", "", "", "", "", ""), is(2));
+  }
+
+  @Test
+  public void function7_andThenNull() {
+    final Function7<String, String, String, String, String, String, String, Integer> ff =
+        (a, b, c, d, e, f, g) -> 1;
+    exception.expect(NullPointerException.class);
+    ff.andThen(null);
+  }
+
 }
