@@ -17,11 +17,13 @@ package com.spotify.futures;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
+import org.hamcrest.core.IsInstanceOf;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -204,6 +206,15 @@ public class CompletableFuturesTest {
     future.toCompletableFuture().cancel(true);
     exception.expect(CancellationException.class);
     getException(future);
+  }
+
+  @Test
+  public void getException_cancelledPropagated() throws Exception {
+    CompletableFuture<?> future = new CompletableFuture<>();
+    CompletableFuture<?> future2 = future.thenApply(x -> x);
+    future.cancel(true);
+
+    assertThat(getException(future2), IsInstanceOf.instanceOf(CancellationException.class));
   }
 
   @Test
