@@ -1,7 +1,6 @@
 language: java
 jdk: 
   - openjdk8
-  - openjdk11
 
 sudo: false
 install: true # This runs the "true" command in the install phase; thus skipping install
