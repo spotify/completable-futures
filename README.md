@@ -86,6 +86,26 @@ CompletableFutures.combineFutures(f1, f2, f3, f4, (a, b, c, d) -> completedFutur
 CompletableFutures.combineFutures(f1, f2, f3, f4, f5, (a, b, c, d, e) -> completedFuture(a + b + c + d + e));
 ```
 
+#### Combine an arbitrary number of futures
+
+If you want to combine more than six futures of different types, use the other `combine` method.
+Since it supports vararg usage, the function is now the first argument.
+The `Combined` object that is input to the function can be used to extract values from the input functions.
+
+This is effectively the same thing as calling `join()` on the input future, but it's safer because
+calling `.get(f)` on a future that is not part of the combine, you will get an `IllegalArgumentException`.
+
+This prevents accidental misuse where you would join on a future that is either not complete, or might never complete
+at all.
+
+```java
+CompletionStage<String> f1;
+CompletionStage<String> f2;
+CompletionStage<String> result = combine(combined -> combined.get(f1) + combined.get(f2), f1, f2);
+```
+
+This variant also exists in the `combineFutures` form.
+ 
 ### Scheduling
 
 #### Polling an external resource
