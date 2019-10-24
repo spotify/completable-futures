@@ -1,0 +1,77 @@
+# Java Maven CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+version: 2.1
+
+executors:
+  corpo-executor:
+    working_directory: ~/project
+    docker:
+      - image: maven:3.3.9-jdk-8
+    environment:
+      # Customize the JVM maximum heap limit
+      MAVEN_OPTS: -Xmx3200m
+
+jobs:
+  build-and-test:
+    executor: corpo-executor
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - maven-repo-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+            - maven-repo-v1-{{ .Branch }}-
+            - maven-repo-v1-
+
+      - run: mvn test dependency:go-offline -s .circleci/settings.xml -U
+
+      - persist_to_workspace:
+          root: ~/project
+          paths: .
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: maven-repo-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+
+  deploy:
+    executor: corpo-executor
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - restore_cache:
+          keys:
+            - maven-repo-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+            - maven-repo-v1-{{ .Branch }}-
+            - maven-repo-v1-
+
+      - deploy:
+          command: mvn deploy -DskipTests -s .circleci/settings.xml
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: maven-repo-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+
+# Test all commits.
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - build-and-test:
+          context: artifactory
+          filters:
+            tags:
+              only: /^v.*/
+
+      - deploy:
+          context: artifactory
+          requires:
+            - build-and-test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
