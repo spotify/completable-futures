@@ -18,6 +18,8 @@ package com.spotify.futures;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -80,6 +82,45 @@ public final class CompletableFutures {
           }
           return result;
         });
+  }
+
+  /**
+   * Returns a new {@link CompletableFuture} which completes to a map with all values of its input
+   * stages, if all succeed.  The resulting map keys is in the same order as the input stages.
+   *
+   * <p> If any of the given stages complete exceptionally, then the returned future also does so,
+   * with a {@link CompletionException} holding this exception as its cause.
+   *
+   * <p> If no stages are provided, returns a future holding an empty map.
+   *
+   * @param stages the stages to combine
+   * @param <K>    the common super-type of all of the keys
+   * @param <V>    the common super-type of all of the values, that determines the monomorphic
+   *    *               type of the output future
+   * @return a future that completes to a map where the values
+   * are the results of the supplied stages
+   *
+   * @since 0.3.3
+   */
+  public static <K, V> CompletableFuture<Map<K, V>> allAsMap(Map<K, CompletableFuture<V>> stages) {
+    CompletableFuture<? extends V>[] allValues = new CompletableFuture[stages.size()];
+    List<K> keys = new ArrayList<>();
+
+    int i = 0;
+    for (Map.Entry<K, ? extends CompletionStage<? extends V>> entry : stages.entrySet()) {
+      keys.add(entry.getKey());
+      allValues[i] = (CompletableFuture<? extends V>) entry.getValue();
+      i++;
+    }
+
+    return CompletableFuture.allOf(allValues).thenApply((ignored) -> {
+      Map<K, V> result = new LinkedHashMap<>(allValues.length);
+      for (int j = 0; j < allValues.length; ++j) {
+        K key = keys.get(j);
+        result.put(key, allValues[j].join());
+      }
+      return result;
+    });
   }
 
   /**
