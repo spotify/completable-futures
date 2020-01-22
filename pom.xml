@@ -143,14 +143,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>2.13</version>
+        <version>3.1.0</version>
         <configuration>
-          <configLocation>checkstyle.xml</configLocation>
+          <configLocation>spotify_checks.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <failOnViolation>true</failOnViolation>
           <failsOnError>true</failsOnError>
           <maxAllowedViolations>0</maxAllowedViolations>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>com.spotify.checkstyle</groupId>
+            <artifactId>spotify-checkstyle-config</artifactId>
+            <version>1.0.10</version>
+          </dependency>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>8.24</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>checkstyle</id>
@@ -164,13 +176,6 @@
             </configuration>
           </execution>
         </executions>
-        <dependencies>
-          <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>5.9</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
