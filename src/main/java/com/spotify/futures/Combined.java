@@ -21,17 +21,17 @@ import java.util.concurrent.CompletionStage;
 
 public class Combined {
 
+  private static final Object NULL_PLACEHOLDER = new Object();
+
   private final IdentityHashMap<CompletionStage<?>, Object> map = new IdentityHashMap<>();
 
   Combined(List<? extends CompletionStage<?>> stages) {
     for (final CompletionStage<?> stage : stages) {
-      map.put(stage, stage.toCompletableFuture().join());
-    }
-  }
-
-  Combined(CompletionStage<?>[] stages) {
-    for (final CompletionStage<?> stage : stages) {
-      map.put(stage, stage.toCompletableFuture().join());
+      Object value = stage.toCompletableFuture().join();
+      if (value == null) {
+        value = NULL_PLACEHOLDER;
+      }
+      map.put(stage, value);
     }
   }
 
@@ -40,6 +40,9 @@ public class Combined {
     if (value == null) {
       throw new IllegalArgumentException(
               "Can not resolve values for futures that were not part of the combine");
+    }
+    if (value == NULL_PLACEHOLDER) {
+      return null;
     }
     return (T) value;
   }

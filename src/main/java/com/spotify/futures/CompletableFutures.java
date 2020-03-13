@@ -17,6 +17,7 @@ package com.spotify.futures;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -434,12 +435,7 @@ public final class CompletableFutures {
    */
   public static <T> CompletionStage<T> combine(
           Function<Combined, T> function, CompletionStage<?>... stages) {
-    @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<?>[] all = new CompletableFuture[stages.length];
-    for (int i = 0; i < stages.length; i++) {
-      all[i] = stages[i].toCompletableFuture();
-    }
-    return CompletableFuture.allOf(all).thenApply(ignored -> function.apply(new Combined(stages)));
+    return combine(function, Arrays.asList(stages));
   }
 
   /**
@@ -631,48 +627,6 @@ public final class CompletableFutures {
                                                ef.join(),
                                                ff.join()));
   }
-
-  /**
-   * Composes multiple stages into another stage using a function.
-   *
-   * @param function the combining function.
-   * @param stages   the stages to combine
-   * @param <T>      the type of the combining function's return value.
-   * @return a stage that is composed from the input stages using the function.
-   * @since 0.4.0
-   */
-  public static <T> CompletionStage<T> combineFutures(
-          Function<Combined, CompletionStage<T>> function, CompletionStage<?>... stages) {
-    @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<?>[] all = new CompletableFuture[stages.length];
-    for (int i = 0; i < stages.length; i++) {
-      all[i] = stages[i].toCompletableFuture();
-    }
-    return CompletableFuture.allOf(all)
-            .thenCompose(ignored -> function.apply(new Combined(stages)));
-  }
-
-  /**
-   * Composes multiple stages into another stage using a function.
-   *
-   * @param function the combining function.
-   * @param stages   the stages to combine
-   * @param <T>      the type of the combining function's return value.
-   * @return a stage that is composed from the input stages using the function.
-   * @since 0.4.0
-   */
-  public static <T> CompletionStage<T> combineFutures(
-          Function<Combined, CompletionStage<T>> function,
-          List<? extends CompletionStage<?>> stages) {
-    @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<?>[] all = new CompletableFuture[stages.size()];
-    for (int i = 0; i < stages.size(); i++) {
-      all[i] = stages.get(i).toCompletableFuture();
-    }
-    return CompletableFuture.allOf(all)
-            .thenCompose(ignored -> function.apply(new Combined(stages)));
-  }
-
 
   /**
    * Polls an external resource periodically until it returns a non-empty result.

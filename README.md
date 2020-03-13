@@ -104,8 +104,14 @@ CompletionStage<String> f2;
 CompletionStage<String> result = combine(combined -> combined.get(f1) + combined.get(f2), f1, f2);
 ```
 
-This variant also exists in the `combineFutures` form.
- 
+If you want to do this in a `combineFutures` form, you can do that like this:
+
+```java
+CompletionStage<String> f1;
+CompletionStage<String> f2;
+CompletionStage<String> result = dereference(combine(combined -> completedFuture(combined.get(f1) + combined.get(f2)), f1, f2));
+```
+
 ### Scheduling
 
 #### Polling an external resource

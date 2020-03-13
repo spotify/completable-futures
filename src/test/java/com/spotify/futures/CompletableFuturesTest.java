@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -782,6 +781,14 @@ public class CompletableFuturesTest {
   }
 
   @Test
+  public void combineList_nullValues_success() {
+    final CompletionStage<String> first = completedFuture(null);
+    final CompletionStage<String> future = combine(combined -> combined.get(first), first);
+
+    assertEquals(null, getCompleted(future));
+  }
+
+  @Test
   public void combineVararg_exceptional() {
     final CompletionStage<String> first = completedFuture("a");
     final CompletionStage<String> second = exceptionallyCompletedFuture(new IllegalStateException());
@@ -818,72 +825,6 @@ public class CompletableFuturesTest {
     final CompletionStage<String> second = completedFuture("b");
     final CompletionStage<String> third = completedFuture("c");
     final CompletionStage<String> future = combine(combined -> combined.get(first) + combined.get(second) + combined.get(third), asList(first, second));
-
-    exception.expectCause(isA(IllegalArgumentException.class));
-    getCompleted(future);
-  }
-
-  @Test
-  public void combineFuturesVararg_success() {
-    final CompletionStage<String> first = completedFuture("a");
-    final CompletionStage<String> second = completedFuture("b");
-    final CompletionStage<String> future = combineFutures(
-            combined -> CompletableFuture.completedFuture(combined.get(first) + combined.get(second)), first, second);
-
-    assertEquals("ab", getCompleted(future));
-  }
-
-  @Test
-  public void combineFuturesList_success() {
-    final CompletionStage<String> first = completedFuture("a");
-    final CompletionStage<String> second = completedFuture("b");
-    final CompletionStage<String> future = combineFutures(
-            combined -> CompletableFuture.completedFuture(combined.get(first) + combined.get(second)), asList(first, second));
-
-    assertEquals("ab", getCompleted(future));
-  }
-
-  @Test
-  public void combineFuturesVararg_exceptional() {
-    final CompletionStage<String> first = completedFuture("a");
-    final CompletionStage<String> second = exceptionallyCompletedFuture(new IllegalStateException());
-    final CompletionStage<String> future = combineFutures(
-            combined -> CompletableFuture.completedFuture(combined.get(first) + combined.get(second)), first, second);
-
-    exception.expectCause(isA(IllegalStateException.class));
-    getCompleted(future);
-  }
-
-  @Test
-  public void combineFuturesList_exceptional() {
-    final CompletionStage<String> first = completedFuture("a");
-    final CompletionStage<String> second = exceptionallyCompletedFuture(new IllegalStateException());
-    final CompletionStage<String> future = combineFutures(
-            combined -> CompletableFuture.completedFuture(combined.get(first) + combined.get(second)), asList(first, second));
-
-    exception.expectCause(isA(IllegalStateException.class));
-    getCompleted(future);
-  }
-
-  @Test
-  public void combineFuturesVararg_misuse() {
-    final CompletionStage<String> first = completedFuture("a");
-    final CompletionStage<String> second = completedFuture("b");
-    final CompletionStage<String> third = completedFuture("c");
-    final CompletionStage<String> future = combineFutures(
-            combined -> CompletableFuture.completedFuture(combined.get(first) + combined.get(second) + combined.get(third)), first, second);
-
-    exception.expectCause(isA(IllegalArgumentException.class));
-    getCompleted(future);
-  }
-
-  @Test
-  public void combineFuturesList_misuse() {
-    final CompletionStage<String> first = completedFuture("a");
-    final CompletionStage<String> second = completedFuture("b");
-    final CompletionStage<String> third = completedFuture("c");
-    final CompletionStage<String> future = combineFutures(
-            combined -> CompletableFuture.completedFuture(combined.get(first) + combined.get(second) + combined.get(third)), asList(first, second));
 
     exception.expectCause(isA(IllegalArgumentException.class));
     getCompleted(future);
