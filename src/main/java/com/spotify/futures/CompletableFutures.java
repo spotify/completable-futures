@@ -434,7 +434,7 @@ public final class CompletableFutures {
    * @since 0.4.0
    */
   public static <T> CompletionStage<T> combine(
-          Function<Combined, T> function, CompletionStage<?>... stages) {
+          Function<CombinedFutures, T> function, CompletionStage<?>... stages) {
     return combine(function, Arrays.asList(stages));
   }
 
@@ -448,13 +448,13 @@ public final class CompletableFutures {
    * @since 0.4.0
    */
   public static <T> CompletionStage<T> combine(
-          Function<Combined, T> function, List<? extends CompletionStage<?>> stages) {
+          Function<CombinedFutures, T> function, List<? extends CompletionStage<?>> stages) {
     @SuppressWarnings("unchecked") // generic array creation
     final CompletableFuture<?>[] all = new CompletableFuture[stages.size()];
     for (int i = 0; i < stages.size(); i++) {
       all[i] = stages.get(i).toCompletableFuture();
     }
-    return CompletableFuture.allOf(all).thenApply(ignored -> function.apply(new Combined(stages)));
+    return CompletableFuture.allOf(all).thenApply(ignored -> function.apply(new CombinedFutures(stages)));
   }
 
   /**

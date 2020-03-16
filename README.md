@@ -90,7 +90,7 @@ CompletableFutures.combineFutures(f1, f2, f3, f4, f5, (a, b, c, d, e) -> complet
 
 If you want to combine more than six futures of different types, use the other `combine` method.
 Since it supports vararg usage, the function is now the first argument.
-The `Combined` object that is input to the function can be used to extract values from the input functions.
+The `CombinedFutures` object that is input to the function can be used to extract values from the input functions.
 
 This is effectively the same thing as calling `join()` on the input future, but it's safer because
 calling `.get(f)` on a future that is not part of the combine, you will get an `IllegalArgumentException`.

@@ -19,13 +19,13 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-public class Combined {
+public final class CombinedFutures {
 
   private static final Object NULL_PLACEHOLDER = new Object();
 
   private final IdentityHashMap<CompletionStage<?>, Object> map = new IdentityHashMap<>();
 
-  Combined(List<? extends CompletionStage<?>> stages) {
+  CombinedFutures(List<? extends CompletionStage<?>> stages) {
     for (final CompletionStage<?> stage : stages) {
       Object value = stage.toCompletableFuture().join();
       if (value == null) {
