@@ -17,6 +17,7 @@ package com.spotify.futures;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -421,6 +422,39 @@ public final class CompletableFutures {
                                       df.join(),
                                       ef.join(),
                                       ff.join()));
+  }
+
+  /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param function the combining function.
+   * @param stages   the stages to combine
+   * @param <T>      the type of the combining function's return value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.4.0
+   */
+  public static <T> CompletionStage<T> combine(
+          Function<CombinedFutures, T> function, CompletionStage<?>... stages) {
+    return combine(function, Arrays.asList(stages));
+  }
+
+  /**
+   * Combines multiple stages by applying a function.
+   *
+   * @param function the combining function.
+   * @param stages   the stages to combine
+   * @param <T>      the type of the combining function's return value.
+   * @return a stage that completes into the return value of the supplied function.
+   * @since 0.4.0
+   */
+  public static <T> CompletionStage<T> combine(
+          Function<CombinedFutures, T> function, List<? extends CompletionStage<?>> stages) {
+    @SuppressWarnings("unchecked") // generic array creation
+    final CompletableFuture<?>[] all = new CompletableFuture[stages.size()];
+    for (int i = 0; i < stages.size(); i++) {
+      all[i] = stages.get(i).toCompletableFuture();
+    }
+    return CompletableFuture.allOf(all).thenApply(ignored -> function.apply(new CombinedFutures(stages)));
   }
 
   /**
