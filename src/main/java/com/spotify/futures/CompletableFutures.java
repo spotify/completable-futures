@@ -31,6 +31,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
@@ -65,6 +66,30 @@ public final class CompletableFutures {
    */
   public static <T> CompletableFuture<List<T>> allAsList(
       List<? extends CompletionStage<? extends T>> stages) {
+    return allAsList(stages, null);
+  }
+
+  /**
+   * Returns a new {@link CompletableFuture} which completes to a list of all values of its input
+   * stages, if all succeed.  The list of results is in the same order as the input stages.
+   *
+   * <p> If any of the given stages complete exceptionally, then the returned future also does so,
+   * with a {@link CompletionException} holding this exception as its cause. Fail fast behavior can
+   * be adjusted by an implementation of {@link FailFast} as input parameter, so the combined
+   * completable future returns exceptionally, immediately after a stage completed exceptionally.
+   *
+   * <p> If no stages are provided, returns a future holding an empty list.
+   *
+   * @param stages the stages to combine
+   * @param failFast fail fast behavior to apply when combining stages
+   * @param <T>    the common super-type of all of the input stages, that determines the monomorphic
+   *               type of the output future
+   * @return a future that completes to a list of the results of the supplied stages
+   * @throws NullPointerException if the stages list or any of its elements are {@code null}
+   * @since 0.3.3
+   */
+  public static <T> CompletableFuture<List<T>> allAsList(
+      List<? extends CompletionStage<? extends T>> stages, @Nullable FailFast failFast) {
     // We use traditional for-loops instead of streams here for performance reasons,
     // see AllAsListBenchmark
 
@@ -73,14 +98,40 @@ public final class CompletableFutures {
     for (int i = 0; i < stages.size(); i++) {
       all[i] = stages.get(i).toCompletableFuture();
     }
-    return CompletableFuture.allOf(all)
-        .thenApply(ignored -> {
+
+    CompletableFuture<Void> allOf = CompletableFuture.allOf(all);
+    if (failFast != null) {
+      setupFailFast(failFast, all, allOf);
+    }
+    return allOf.thenApply(
+        ignored -> {
           final List<T> result = new ArrayList<>(all.length);
           for (int i = 0; i < all.length; i++) {
             result.add(all[i].join());
           }
           return result;
         });
+  }
+
+  private static <T> void setupFailFast(
+      FailFast failFast, CompletableFuture<? extends T>[] all, CompletableFuture<Void> allOf) {
+    ExecutionMetadata executionMeta = new ExecutionMetadata(all);
+    for (int i = 0; i < all.length; i++) {
+      all[i].whenComplete(
+          (result, throwable) -> {
+            if (!allOf.isDone()
+                && throwable != null
+                && failFast.failFast(throwable, executionMeta)) {
+              allOf.completeExceptionally(failFast.withThrowable(throwable));
+
+              if (failFast.cancelAll()) {
+                for (int j = 0; j < all.length; j++) {
+                  all[j].cancel(true);
+                }
+              }
+            }
+          });
+    }
   }
 
   /**
@@ -123,6 +174,41 @@ public final class CompletableFutures {
     final CompletableFuture<T> future = new CompletableFuture<>();
     future.completeExceptionally(throwable);
     return future;
+  }
+
+  /**
+   * Collect a stream of {@link CompletionStage}s into a single future holding a list of the joined
+   * entities.
+   *
+   * <p>Usage:
+   *
+   * <pre>{@code
+   * collection.stream()
+   *     .map(this::someAsyncFunc)
+   *     .collect(joinList(new FailFastWithThrowable(TimeoutException.class)))
+   *     .thenApply(this::consumeList)
+   * }</pre>
+   *
+   * <p>The generated {@link CompletableFuture} will complete to a list of all entities, in the
+   * order they were encountered in the original stream. Similar to {@link
+   * CompletableFuture#allOf(CompletableFuture[])}, if any of the input futures complete
+   * exceptionally, then the returned CompletableFuture also does so, with a {@link
+   * CompletionException} holding this exception as its cause. Fail fast behavior can be adjusted by
+   * an implementation of {@link FailFast} as input parameter, so the combined completable future
+   * returns exceptionally, immediately after a stage completed exceptionally.
+   *
+   * @param failFast fail fast behavior to apply when combining stages
+   * @param <T>      the common super-type of all of the input stages, that determines the
+   *                 monomorphic type of the output future
+   * @param <S>      the implementation of {@link CompletionStage} that the stream contains
+   * @return a new {@link CompletableFuture} according to the rules outlined in the method
+   * description
+   * @throws NullPointerException if any future in the stream is {@code null}
+   * @since 0.3.3
+   */
+  public static <T, S extends CompletionStage<? extends T>>
+  Collector<S, ?, CompletableFuture<List<T>>> joinList(@Nullable FailFast failFast) {
+    return collectingAndThen(toList(), stages -> allAsList(stages, failFast));
   }
 
   /**

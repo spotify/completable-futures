@@ -64,6 +64,14 @@ collection.stream()
     .thenApply(this::consumeList)
 ```
 
+To fail fast as soon as one of the asynchronous operations completed exceptionally, a `FailFast` behavior can be specified as parameter:
+```java
+collection.stream()
+    .map(this::someAsyncFunction)
+    .collect(CompletableFutures.joinList(new FailFastWithThrowable(TimeoutException.class)))
+    .thenApply(this::consumeList)
+```
+
 #### combine
 
 If you want to combine more than two futures of different types, use the `combine` method:

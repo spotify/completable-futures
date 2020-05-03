@@ -74,6 +74,16 @@
       </roles>
       <timezone>+1</timezone>
     </developer>
+    <developer>
+      <id>JoseAlavez</id>
+      <name>Jose Alavez</name>
+      <email>414v32@gmail.com</email>
+      <url>https://github.com/JoseAlavez</url>
+      <roles>
+        <role>developer</role>
+      </roles>
+      <timezone>+2</timezone>
+    </developer>
   </developers>
 
   <dependencies>

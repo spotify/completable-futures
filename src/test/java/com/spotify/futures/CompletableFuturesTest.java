@@ -35,6 +35,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.combine;
@@ -59,6 +61,7 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
@@ -66,6 +69,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -118,6 +122,28 @@ public class CompletableFuturesTest {
 
     exception.expectCause(is(ex));
     allAsList(input).get();
+  }
+
+  @Test
+  public void allAsList_exceptional_failFast() {
+    final CompletableFuture<String> incompleteFuture = new CompletableFuture<>();
+    final CompletableFuture<String> failedFuture =
+        exceptionallyCompletedFuture(new TimeoutException());
+    final CompletableFuture<String> completedFuture = completedFuture("completedFuture");
+    final FailFastWithThrowable failFastWithThrowable = new FailFastWithThrowable(TimeoutException.class);
+    final List<CompletionStage<String>> input =
+        asList(incompleteFuture, failedFuture, completedFuture);
+
+    try {
+      allAsList(input, failFastWithThrowable).join();
+      fail("Expected exception being thrown.");
+    } catch (Exception e) {
+      assertThat(e, instanceOf(CompletionException.class));
+      assertThat(e.getCause(), instanceOf(TimeoutException.class));
+      assertThat(incompleteFuture.isCancelled(), is(true));
+      assertThat(failedFuture.isCancelled(), is(false));
+      assertThat(completedFuture.isCancelled(), is(false));
+    }
   }
 
   @Test
@@ -300,6 +326,24 @@ public class CompletableFuturesTest {
 
     exception.expectCause(is(ex));
     result.get();
+  }
+
+  @Test
+  public void joinList_exceptional_failFast() {
+    final FailFastWithThrowable failFastWithThrowable = new FailFastWithThrowable(TimeoutException.class);
+    final CompletableFuture<String> incompleteFuture = new CompletableFuture<>();
+    final CompletableFuture<String> failedFuture =
+        exceptionallyCompletedFuture(new TimeoutException());
+
+    try {
+      Stream.of(failedFuture, incompleteFuture).collect(joinList(failFastWithThrowable)).join();
+      fail("Expected exception being thrown.");
+    } catch (Exception e) {
+      assertThat(e, instanceOf(CompletionException.class));
+      assertThat(e.getCause(), instanceOf(TimeoutException.class));
+      assertThat(incompleteFuture.isCancelled(), is(true));
+      assertThat(failedFuture.isCancelled(), is(false));
+    }
   }
 
   @Test
