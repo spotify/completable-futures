@@ -38,6 +38,18 @@ List<CompletableFuture<String>> futures = asList(completedFuture("a"), completed
 CompletableFuture<List<String>> joined = CompletableFutures.allAsList(futures);
 ```
 
+#### allAsMap
+
+If you want to join a map of key and value-futures, each of uniform type, use `allAsMap`. This 
+returns a future which completes to a map of all key values of its inputs:
+
+```java
+  Map<String, CompletableFuture<String>> futures = new HashMap() {{
+    put("key", completedFuture("value"));
+  }};
+  CompletableFuture<Map<String, String>> joined = CompletableFutures.allAsMap(futures);
+```
+
 #### successfulAsList
 
 Works like `allAsList`, but futures that fail will not fail the joined future. Instead, the
