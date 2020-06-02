@@ -18,7 +18,9 @@ package com.spotify.futures;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -81,6 +83,43 @@ public final class CompletableFutures {
           }
           return result;
         });
+  }
+
+  /**
+   * Returns a new {@link CompletableFuture} which completes to a map of all values of its input
+   * stages, if all succeed.
+   *
+   * <p> If any of the given stages complete exceptionally, then the returned future also does so,
+   * with a {@link CompletionException} holding this exception as its cause.
+   *
+   * <p> If no stages are provided, returns a future holding an empty map.
+   *
+   * @param map the map of stages to combine
+   * @param <U>    the common super-type of the keys
+   * @param <T>    the common super-type of all of the input value-stages, that determines the
+   *           monomorphic type of the output future
+   * @return a future that completes to a map of the results of the supplied keys and value-stages
+   * @throws NullPointerException if value-stages or any of its elements are {@code null}
+   * @since 0.3.3
+   */
+  public static <U, T> CompletableFuture<Map<U, T>> allAsMap(
+      Map<U, ? extends CompletionStage<? extends T>> map) {
+
+    final List<U> keys = new ArrayList<>(map.keySet());
+    @SuppressWarnings("unchecked") // generic array creation
+    final CompletableFuture<? extends T>[] values = new CompletableFuture[keys.size()];
+    for (int i = 0; i < keys.size(); i++) {
+      values[i] = map.get(keys.get(i)).toCompletableFuture();
+    }
+    return CompletableFuture.allOf(values)
+        .thenApply(
+            ignored -> {
+              final Map<U, T> result = new HashMap<>(values.length);
+              for (int i = 0; i < values.length; i++) {
+                result.put(keys.get(i), values[i].join());
+              }
+              return result;
+            });
   }
 
   /**
