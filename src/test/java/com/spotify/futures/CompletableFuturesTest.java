@@ -15,6 +15,8 @@
  */
 package com.spotify.futures;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -37,6 +39,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
+import static com.spotify.futures.CompletableFutures.allAsMap;
 import static com.spotify.futures.CompletableFutures.combine;
 import static com.spotify.futures.CompletableFutures.combineFutures;
 import static com.spotify.futures.CompletableFutures.dereference;
@@ -50,7 +53,9 @@ import static com.spotify.futures.CompletableFutures.poll;
 import static com.spotify.futures.CompletableFutures.successfulAsList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -136,6 +141,77 @@ public class CompletableFuturesTest {
 
     exception.expect(NullPointerException.class);
     allAsList(input);
+  }
+
+  @Test
+  public void allAsMap_empty() throws Exception {
+    final Map<String, CompletionStage<String>> input = emptyMap();
+    assertThat(allAsMap(input), completesTo(emptyMap()));
+  }
+
+  @Test
+  public void allAsMap_one() throws Exception {
+    final String key = "1";
+    final String value = "a";
+    final Map<String, CompletionStage<String>> input = singletonMap(key, completedFuture(value));
+    assertThat(allAsMap(input), completesTo(singletonMap(key, value)));
+  }
+
+  @Test
+  public void allAsMap_multiple() throws Exception {
+    final List<String> keys = asList("1", "2", "3");
+    final List<String> values = asList("a", "b", "c");
+    final List<CompletableFuture<String>> stagedValues = values.stream()
+        .map(CompletableFuture::completedFuture)
+        .collect(toList());
+    final Map<String, CompletableFuture<String>> input = asMap(keys, stagedValues);
+    assertThat(allAsMap(input), completesTo(asMap(keys, values)));
+  }
+
+  @Test
+  public void allAsMap_exceptional() throws Exception {
+    final RuntimeException ex = new RuntimeException("boom");
+    final List<String> keys = asList("1", "2", "3");
+    final List<CompletionStage<String>> values = asList(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(ex),
+        completedFuture("b")
+    );
+    Map input = asMap(keys, values);
+    exception.expectCause(is(ex));
+    allAsMap(input).get();
+  }
+
+  @Test
+  public void allAsMap_null() throws Exception {
+    exception.expect(NullPointerException.class);
+    allAsMap(null);
+  }
+
+  @Test
+  public void allAsMap_valueContainsNull() throws Exception {
+    final List<String> keys = asList("1", "2", "3");
+    final List<CompletionStage<String>> values = asList(
+        completedFuture("a"),
+        null,
+        completedFuture("b")
+    );
+
+    final Map<String, CompletionStage<String>> input = asMap(keys, values);
+    exception.expect(NullPointerException.class);
+    allAsMap(input);
+  }
+
+  @Test
+  public void allAsMap_keyContainsNull() throws Exception {
+    final List<String> keys = asList("1", null, "3");
+    final List<String> values = asList("a", "b", "c");
+    final List<CompletableFuture<String>> stagedValues = values.stream()
+        .map(CompletableFuture::completedFuture)
+        .collect(toList());;
+
+    final Map<String, CompletableFuture<String>> input = asMap(keys, stagedValues);
+    assertThat(allAsMap(input), completesTo(asMap(keys, values)));
   }
 
   @Test
@@ -936,6 +1012,14 @@ public class CompletableFuturesTest {
         }
       }
     };
+  }
+
+  private static <U, T> Map<U, T> asMap(final List<U> keys, final List<T> input) {
+    Map<U, T> map = new HashMap();
+    for (int i = 0; i < keys.size(); i++) {
+      map.put(keys.get(i), input.get(i));
+    }
+    return map;
   }
 
   private static class NonThrowingFuture<T> extends CompletableFuture<T> {
