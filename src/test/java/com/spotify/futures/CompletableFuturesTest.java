@@ -37,6 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 
 import static com.spotify.futures.CompletableFutures.allAsList;
 import static com.spotify.futures.CompletableFutures.allAsMap;
@@ -64,6 +66,7 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
@@ -71,6 +74,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -123,6 +127,23 @@ public class CompletableFuturesTest {
 
     exception.expectCause(is(ex));
     allAsList(input).get();
+  }
+
+  @Test
+  public void allAsList_exceptional_failFast() {
+    final CompletableFuture<String> incomplete = incompleteFuture();
+    final CompletableFuture<String> failed =
+        exceptionallyCompletedFuture(new TimeoutException());
+    final List<CompletionStage<String>> input =
+        asList(incomplete, failed);
+
+    try {
+      allAsList(input).join();
+      fail("Expected exception being thrown.");
+    } catch (Exception e) {
+      assertThat(e, instanceOf(CompletionException.class));
+      assertThat(e.getCause(), instanceOf(TimeoutException.class));
+    }
   }
 
   @Test

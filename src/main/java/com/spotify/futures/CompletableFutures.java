@@ -53,7 +53,7 @@ public final class CompletableFutures {
    * Returns a new {@link CompletableFuture} which completes to a list of all values of its input
    * stages, if all succeed.  The list of results is in the same order as the input stages.
    *
-   * <p> If any of the given stages complete exceptionally, then the returned future also does so,
+   * <p> As soon as any of the given stages complete exceptionally, then the returned future also does so,
    * with a {@link CompletionException} holding this exception as its cause.
    *
    * <p> If no stages are provided, returns a future holding an empty list.
@@ -75,7 +75,19 @@ public final class CompletableFutures {
     for (int i = 0; i < stages.size(); i++) {
       all[i] = stages.get(i).toCompletableFuture();
     }
-    return CompletableFuture.allOf(all)
+
+    CompletableFuture<Void> allOf = CompletableFuture.allOf(all);
+
+    for (int i = 0; i < all.length; i++) {
+      all[i].exceptionally(throwable -> {
+        if (!allOf.isDone()) {
+          allOf.completeExceptionally(throwable);
+        }
+        return null; // intentionally unused
+      });
+    }
+
+    return allOf
         .thenApply(ignored -> {
           final List<T> result = new ArrayList<>(all.length);
           for (int i = 0; i < all.length; i++) {
