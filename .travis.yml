@@ -3,13 +3,6 @@ jdk:
   - openjdk8
 
 sudo: false
-install: true # This runs the "true" command in the install phase; thus skipping install
-script:
-  - |
-    if [[ "$TRAVIS_BRANCH" == master && "$TRAVIS_PULL_REQUEST" == false ]]
-    then mvn deploy -s travis-settings.xml
-    else mvn verify
-    fi
 
 # codecov
 before_script:
