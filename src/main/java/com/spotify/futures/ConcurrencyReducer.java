@@ -164,13 +164,13 @@ public class ConcurrencyReducer<T> {
 
     future.whenComplete(
         (result, t) -> {
-          if (result != null) {
+          if (t != null) {
             limit.release();
-            response.complete(result);
+            response.completeExceptionally(t);
             pump();
           } else {
             limit.release();
-            response.completeExceptionally(t);
+            response.complete(result);
             pump();
           }
         });
