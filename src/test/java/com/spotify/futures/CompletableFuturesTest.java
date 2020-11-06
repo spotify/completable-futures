@@ -70,6 +70,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -438,14 +439,12 @@ public class CompletableFuturesTest {
 
   @Test
   public void joinMap_two() throws Exception {
-    final CompletableFuture<String> a = completedFuture("hello");
-    final CompletableFuture<String> b = completedFuture("world");
-
     final Map<String, String> result = Stream.of("hello", "world")
             .collect(joinMap(e -> "k " + e, e -> completedFuture("v " + e)))
             .get();
-    assertThat(result.keySet(), contains("k hello", "k world"));
-    assertThat(result.values(), contains("v hello", "v world"));
+    assertThat(result.entrySet(), hasSize(2));
+    assertThat(result, hasEntry("k hello", "v hello"));
+    assertThat(result, hasEntry("k world", "v world"));
   }
 
   @Test
