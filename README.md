@@ -78,9 +78,10 @@ collection.stream()
 
 #### joinMap
 
-`joinMap` is a stream collector that applies an asynchronous operation to each element of the stream, and associates the result of that 
-operation to a key derived from the original element. This is useful when you need to keep the association between the entity that triggered
-the asynchronous operation and the result of that operation:
+`joinMap` is a stream collector that applies an asynchronous operation to each element of the 
+stream, and associates the result of that operation to a key derived from the original element. 
+This is useful when you need to keep the association between the entity that triggered the 
+asynchronous operation and the result of that operation:
 
 ```java
 collection.stream()
