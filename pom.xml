@@ -9,7 +9,7 @@
   </parent>
 
   <artifactId>completable-futures</artifactId>
-  <version>0.3.4-SNAPSHOT</version>
+  <version>0.3.5-SNAPSHOT</version>
 
   <name>completable-futures</name>
   <description>Convenience utilities for working with asynchronous Java 8</description>

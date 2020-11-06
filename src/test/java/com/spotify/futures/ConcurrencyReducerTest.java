@@ -54,6 +54,16 @@ public class ConcurrencyReducerTest {
     limiter.add(null);
   }
 
+  @Test()
+  public void testVoidJob() {
+    final ConcurrencyReducer<Void> limiter = ConcurrencyReducer.create(1, 10);
+    final CompletionStage<Void> task = CompletableFuture.completedFuture(null);
+    assertTrue(task.toCompletableFuture().isDone());
+
+    final CompletableFuture<Void> stage = limiter.add(() -> task);
+    assertTrue(stage.isDone());
+  }
+
   @Test
   public void testJobReturnsNull() throws Exception {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
