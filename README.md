@@ -155,12 +155,12 @@ the various flavors of `unravelled()` can be used to make sure the exception rec
 lambda has already been unravelled:
 
 ```java
-future.exceptionally(ex -> {
+future.exceptionally(unravelled(ex -> {
     if(ex instanceof BusinessRelevantException){
         return emptyValue();
     }
     throw new CompletionException(ex);
-});
+}));
 ```
 
 ### Scheduling
