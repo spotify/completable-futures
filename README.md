@@ -124,6 +124,45 @@ CompletionStage<String> f2;
 CompletionStage<String> result = dereference(combine(combined -> completedFuture(combined.get(f1) + combined.get(f2)), f1, f2));
 ```
 
+### Unwrapping CompletionExceptions
+
+When handling exceptions thrown by `join()` and `get()` or received in `whenComplete()`, 
+`exceptionally()` or `handle()`, it can be difficult to figure out if the exception that is 
+obtained is going to be a `CompletionException` or some other `Throwable`. Even when we know
+that the exception is guaranteed to be a `CompletionException`, it can be hard to know ahead
+of time if `ex.getCause()` is going to be another `CompletionException`, an actually useful
+`Throwable`, or deeply nested the `CompletionExceptions` might be.
+
+`unravel(Throwable)` will recursively unwrap `CompletionExceptions` at the top of the exception
+chain. It can be used this way:
+
+```java
+try {
+    String value = future.join();
+}
+catch(Throwable ex){
+    Throwable unravelled = unravel(ex);
+    if(ex instanceof BusinessRelevantException){
+        handleBusinessException(ex);
+    } else {
+        logAndFail(ex);    
+    }
+}
+```
+
+In order to simplify the lambdas passed in `exceptionally()`, `handle()` and `whenComplete()` 
+the various flavors of `unravelled()` can be used to make sure the exception received by the
+lambda has already been unravelled:
+
+```java
+future.exceptionally(ex -> {
+    if(ex instanceof BusinessRelevantException){
+        return emptyValue();
+    }
+    throw new CompletionException(ex);
+});
+```
+
 ### Scheduling
 
 #### Polling an external resource

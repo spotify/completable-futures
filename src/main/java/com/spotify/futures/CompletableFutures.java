@@ -36,10 +36,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+
+import javax.annotation.Nullable;
 
 /**
  * A collection of static utility methods that extend the
@@ -489,7 +492,7 @@ public final class CompletableFutures {
    * @since 0.4.0
    */
   public static <T> CompletionStage<T> combine(
-          Function<CombinedFutures, T> function, CompletionStage<?>... stages) {
+      Function<CombinedFutures, T> function, CompletionStage<?>... stages) {
     return combine(function, Arrays.asList(stages));
   }
 
@@ -681,6 +684,47 @@ public final class CompletableFutures {
                                                df.join(),
                                                ef.join(),
                                                ff.join()));
+  }
+
+  /**
+   * Returns the underlying exception of a {@code CompletionException}. This method may be
+   * called on any {@code Throwable} or {@code null}, but if the specified argument is not
+   * an instance of {@code CompletionException} then the argument is returned without
+   * modification.
+   *
+   * <p>This method recursively unpacks multiple layers of {@code CompletionException} wrappers
+   * until it finds a cause that is not a {@code CompletionException}. If there is no such cause,
+   * then the deepest {@code CompletionException} in the chain is returned.
+   *
+   * @param throwable the {@code Throwable} whose underlying cause we want to unravel
+   * @return the actual exception that may or may not be wrapped inside the specified
+   *         {@code Throwable}
+   * @since 0.3.5
+   */
+  public static Throwable unravel(@Nullable Throwable throwable) {
+    if (throwable == null) {
+      return null;
+    }
+    if (!(throwable instanceof CompletionException)) {
+      return throwable;
+    }
+    Throwable cause = throwable.getCause();
+    if (cause == null) {
+      return throwable;
+    }
+    return unravel(cause);
+  }
+
+  public static <T> Function<Throwable, T> unravelled(Function<Throwable, T> function) {
+    return function.compose(CompletableFutures::unravel);
+  }
+
+  public static <T, U> BiFunction<T, Throwable, U> unravelled(BiFunction<T, Throwable, U> function) {
+    return (value, ex) -> function.apply(value, unravel(ex));
+  }
+
+  public static <T, U> BiConsumer<T, Throwable> unravelled(BiConsumer<T, Throwable> consumer) {
+    return (value, ex) -> consumer.accept(value, unravel(ex));
   }
 
   /**
