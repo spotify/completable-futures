@@ -150,6 +150,21 @@ catch(Throwable ex){
 }
 ```
 
+There is also `unravel(Callable<V>)` which can be used together with `join()` or  `get()` and 
+allows you to use the standard catch statement to differentiate between exception types:
+
+```java
+try {
+    String value = unravel(future::join);
+} 
+catch(BusinessRelevantException ex){
+    handleBusinessException(ex);
+}
+catch(Throwable ex){
+	logAndFail(ex);
+}
+```
+
 In order to simplify the lambdas passed in `exceptionally()`, `handle()` and `whenComplete()` 
 the various flavors of `unravelled()` can be used to make sure the exception received by the
 lambda has already been unravelled:
