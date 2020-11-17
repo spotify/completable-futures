@@ -21,6 +21,7 @@ package com.spotify.futures;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -214,6 +215,43 @@ public final class CompletableFutures {
   public static <T, S extends CompletionStage<? extends T>>
   Collector<S, ?, CompletableFuture<List<T>>> joinList() {
     return collectingAndThen(toList(), CompletableFutures::allAsList);
+  }
+
+  /**
+   * Collect a stream of Objects into a single future holding a Map whose keys are the result of
+   * applying the provided mapping function to the input elements, and whose values are the
+   * corresponding joined entities.
+   *
+   * <p> Usage:
+   *
+   * <pre>{@code
+   * collection.stream()
+   *     .collect(joinMap(this::toKey, this::someAsyncFunc))
+   *     .thenApply(this::consumeMap)
+   * }</pre>
+   *
+   * <p> The generated {@link CompletableFuture} will complete to a Map of all entities. Similar
+   * to {@link CompletableFuture#allOf(CompletableFuture[])}, if any of the input futures
+   * complete exceptionally, then the returned CompletableFuture also does so, with a
+   * {@link CompletionException} holding this exception as its cause.
+   *
+   * @param keyMapper a mapping function to produce keys
+   * @param valueFutureMapper a mapping function to produce futures that will eventually produce
+   *                          the values
+   * @param <T> the type of the input elements
+   * @param <K> the output type of the key mapping function
+   * @param <V> the common super-type of the stages returned by the value future mapping function
+   * @return a new {@link CompletableFuture} according to the rules outlined in the method
+   * description
+   * @throws NullPointerException if valueFutureMapper returns {@code null} for any input element
+   * @since 0.3.4
+   */
+  public static <T, K, V> Collector<T, ?, CompletableFuture<Map<K, V>>> joinMap(
+          Function<? super T, ? extends K> keyMapper,
+          Function<? super T, ? extends CompletionStage<? extends V>> valueFutureMapper){
+    Collector<T, ?, Map<K, CompletionStage<? extends V>>> collector =
+            toMap(keyMapper, valueFutureMapper);
+    return collectingAndThen(collector, CompletableFutures::allAsMap);
   }
 
   /**
