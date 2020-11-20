@@ -144,7 +144,7 @@ When handling exceptions thrown by `join()` and `get()` or received in `whenComp
 obtained is going to be a `CompletionException` or some other `Throwable`. Even when we know
 that the exception is guaranteed to be a `CompletionException`, it can be hard to know ahead
 of time if `ex.getCause()` is going to be another `CompletionException`, an actually useful
-`Throwable`, or deeply nested the `CompletionExceptions` might be.
+`Throwable`, or how deeply nested the `CompletionExceptions` might be.
 
 `unravel(Throwable)` will recursively unwrap `CompletionExceptions` at the top of the exception
 chain. It can be used this way:
@@ -179,11 +179,11 @@ catch(Throwable ex){
 ```
 
 In order to simplify the lambdas passed in `exceptionally()`, `handle()` and `whenComplete()` 
-the various flavors of `unravelled()` can be used to make sure the exception received by the
-lambda has already been unravelled:
+some overloads of `unravel()` can be used to make sure the exception received by the lambda 
+has already been unravelled:
 
 ```java
-future.exceptionally(unravelled(ex -> {
+future.exceptionally(unravel(ex -> {
     if(ex instanceof BusinessRelevantException){
         return emptyValue();
     }

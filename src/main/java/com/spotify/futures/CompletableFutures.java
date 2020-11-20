@@ -754,6 +754,28 @@ public final class CompletableFutures {
     return unravel(cause);
   }
 
+  /**
+   * Calls the specified callable catching any thrown CompletionException, unravelling it
+   * and throwing the unravelled exception instead.
+   * <p>
+   * This method is convenient to use to unravel exceptions thrown by {@code join()} or
+   * {@code get()}
+   * <pre>
+   * try {
+   *     String value = unravel(future::join);
+   * }
+   * catch(BusinessRelevantException ex){
+   *     handleBusinessException(ex);
+   * }
+   * catch(Throwable ex){
+   * 	logAndFail(ex);
+   * }
+   * </pre>
+   *
+   * @param callable the Callable whose thrown exceptions need to be unravelled
+   * @return the value returned by callable.call()
+   * @since 0.3.5
+   */
   public static <T> T unravel(Callable<T> callable) throws Throwable {
     try {
       return callable.call();
@@ -762,15 +784,83 @@ public final class CompletableFutures {
     }
   }
 
-  public static <T> Function<Throwable, T> unravelled(Function<Throwable, T> function) {
+  /**
+   * Returns a new {@code Function} that calls the specified {@code Function} after
+   * unravelling the throwable passed as parameter.
+   * <p>
+   * This method is convenient to use with {@code exceptionally()} to ensure that the
+   * {@code Throwable} received as parameter is already unravelled.
+   * <pre>
+   * future.exceptionally(unravel(ex -> {
+   *     if(ex instanceof BusinessRelevantException){
+   *         return emptyValue();
+   *     }
+   *     throw new CompletionException(ex);
+   * }))
+   * </pre>
+   * @param function the {@code Function} that is to receive the unravelled exception as
+   *                 parameter
+   * @param <T> the return type of the function
+   * @return a new {@code Function} that unravels its {@code Throwable} parameter before
+   *         passing it to the specified function
+   */
+  public static <T> Function<Throwable, T> unravel(Function<Throwable, T> function) {
     return function.compose(CompletableFutures::unravel);
   }
 
-  public static <T, U> BiFunction<T, Throwable, U> unravelled(BiFunction<T, Throwable, U> function) {
+  /**
+   * Returns a new {@code BiFunction} that calls the specified {@code BiFunction} after
+   * unravelling the throwable passed as first parameter. The second parameter is passed as-is
+   * to the specified {@code BiFunction}
+   * <p>
+   * This method is convenient to use with {@code handle()} to ensure that the
+   * {@code Throwable} received as parameter is already unravelled.
+   * <pre>
+   * future.handle((value, ex) -> {
+   *     if(ex instanceof BusinessRelevantException){
+   *         return emptyValue();
+   *     }
+   *     if(ex != null){
+   *         throw new CompletionException(ex);
+   *     }
+   *     return doSomething(value);
+   * }))
+   * </pre>
+   * @param function the {@code BiFunction} that is to receive the unravelled exception as
+   *                 first parameter
+   * @param <T> the return type of the function
+   * @return a new {@code BiFunction} that unravels its {@code Throwable} parameter before
+   *         passing it to the specified function
+   */
+  public static <T, U> BiFunction<T, Throwable, U> unravel(BiFunction<T, Throwable, U> function) {
     return (value, ex) -> function.apply(value, unravel(ex));
   }
 
-  public static <T, U> BiConsumer<T, Throwable> unravelled(BiConsumer<T, Throwable> consumer) {
+  /**
+   * Returns a new {@code BiConsumer} that calls the specified {@code BiConsumer} after
+   * unravelling the throwable passed as first parameter. The second parameter is passed as-is
+   * to the specified {@code BiConsumer}
+   * <p>
+   * This method is convenient to use with {@code whenComplete()} to ensure that the
+   * {@code Throwable} received as parameter is already unravelled.
+   * <pre>
+   * future.whenComplete((value, ex) -> {
+   *     if(ex instanceof BusinessRelevantException){
+   *         performSpecialProcess(ex);
+   *     } else if(ex != null) {
+   *         performErrorProcess();
+   *     } else {
+   *         performRegularProcess(value);
+   *     }
+   * }))
+   * </pre>
+   * @param consumer the {@code BiConsumer} that is to receive the unravelled exception as
+   *                 first parameter
+   * @param <T> the return type of the function
+   * @return a new {@code BiConsumer} that unravels its {@code Throwable} parameter before
+   *         passing it to the specified consumer
+   */
+  public static <T, U> BiConsumer<T, Throwable> unravel(BiConsumer<T, Throwable> consumer) {
     return (value, ex) -> consumer.accept(value, unravel(ex));
   }
 
