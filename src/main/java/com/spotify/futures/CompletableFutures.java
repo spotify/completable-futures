@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -757,8 +757,8 @@ public final class CompletableFutures {
   /**
    * Calls the specified callable catching any thrown CompletionException, unravelling it
    * and throwing the unravelled exception instead.
-   * <p>
-   * This method is convenient to use to unravel exceptions thrown by {@code join()} or
+   *
+   * <p>This method is convenient to use to unravel exceptions thrown by {@code join()} or
    * {@code get()}
    * <pre>
    * try {
@@ -768,7 +768,7 @@ public final class CompletableFutures {
    *     handleBusinessException(ex);
    * }
    * catch(Throwable ex){
-   * 	logAndFail(ex);
+   *     logAndFail(ex);
    * }
    * </pre>
    *
@@ -779,7 +779,7 @@ public final class CompletableFutures {
   public static <T> T unravel(Callable<T> callable) throws Throwable {
     try {
       return callable.call();
-    } catch(CompletionException ex){
+    } catch(CompletionException ex) {
       throw unravel(ex);
     }
   }
@@ -787,8 +787,8 @@ public final class CompletableFutures {
   /**
    * Returns a new {@code Function} that calls the specified {@code Function} after
    * unravelling the throwable passed as parameter.
-   * <p>
-   * This method is convenient to use with {@code exceptionally()} to ensure that the
+   *
+   * <p>This method is convenient to use with {@code exceptionally()} to ensure that the
    * {@code Throwable} received as parameter is already unravelled.
    * <pre>
    * future.exceptionally(unravel(ex -> {
@@ -812,8 +812,8 @@ public final class CompletableFutures {
    * Returns a new {@code BiFunction} that calls the specified {@code BiFunction} after
    * unravelling the throwable passed as first parameter. The second parameter is passed as-is
    * to the specified {@code BiFunction}
-   * <p>
-   * This method is convenient to use with {@code handle()} to ensure that the
+   *
+   * <p>This method is convenient to use with {@code handle()} to ensure that the
    * {@code Throwable} received as parameter is already unravelled.
    * <pre>
    * future.handle((value, ex) -> {
@@ -840,8 +840,8 @@ public final class CompletableFutures {
    * Returns a new {@code BiConsumer} that calls the specified {@code BiConsumer} after
    * unravelling the throwable passed as first parameter. The second parameter is passed as-is
    * to the specified {@code BiConsumer}
-   * <p>
-   * This method is convenient to use with {@code whenComplete()} to ensure that the
+   *
+   * <p>This method is convenient to use with {@code whenComplete()} to ensure that the
    * {@code Throwable} received as parameter is already unravelled.
    * <pre>
    * future.whenComplete((value, ex) -> {

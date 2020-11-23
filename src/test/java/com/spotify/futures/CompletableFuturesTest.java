@@ -34,11 +34,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.concurrent.CompletionException;
@@ -58,6 +63,7 @@ import static com.spotify.futures.CompletableFutures.joinList;
 import static com.spotify.futures.CompletableFutures.joinMap;
 import static com.spotify.futures.CompletableFutures.poll;
 import static com.spotify.futures.CompletableFutures.successfulAsList;
+import static com.spotify.futures.CompletableFutures.unravel;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -75,16 +81,19 @@ import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -999,6 +1008,156 @@ public class CompletableFuturesTest {
   }
 
   @Test
+  public void unravel_null() {
+    assertThat(unravel((Throwable)null), nullValue());
+  }
+
+  @Test
+  public void unravel_exception() {
+    Exception ex = new IllegalArgumentException();
+    assertThat(unravel(ex), sameInstance(ex));
+  }
+
+  @Test
+  public void unravel_completionException_noCause() {
+    CompletionException ex = new NoCauseCompletionException();
+    assertThat(unravel(ex), sameInstance(ex));
+  }
+
+  @Test
+  public void unravel_completionException_nested() {
+    IllegalArgumentException rootCause = new IllegalArgumentException();
+    CompletionException ex = new CompletionException(new CompletionException(rootCause));
+    assertThat(unravel(ex), sameInstance(rootCause));
+  }
+
+  @Test
+  public void unravel_callable_success() throws Throwable {
+    Callable<String> callable = () -> "OK";
+    assertThat(unravel(callable), is("OK"));
+  }
+
+  @Test
+  public void unravel_callable_error() {
+    Callable<String> fail = () -> {
+      throw new Error("Bad");
+    };
+    assertThrows(Error.class, () -> unravel(fail));
+  }
+
+  @Test
+  public void unravel_callable_completionException() {
+    Callable<String> fail = () -> {
+      throw new CompletionException(new IllegalArgumentException("Bad"));
+    };
+    assertThrows(IllegalArgumentException.class, () -> unravel(fail));
+  }
+
+  @Test
+  public void unravel_function_exception() {
+    Exception expected = new IllegalArgumentException();
+    Throwable received = captureUnravelFunctionArgument(expected);
+    assertThat(received, sameInstance(expected));
+  }
+
+  @Test
+  public void unravel_function_completionException_noCause() {
+    CompletionException expected = new NoCauseCompletionException();
+    Throwable received = captureUnravelFunctionArgument(expected);
+    assertThat(received, sameInstance(expected));
+  }
+
+  @Test
+  public void unravel_function_completionException_nested() {
+    Exception expected = new IllegalArgumentException("bad");
+    Throwable received = captureUnravelFunctionArgument(new CompletionException(new CompletionException(expected)));
+    assertThat(received, sameInstance(expected));
+  }
+
+  private Throwable captureUnravelFunctionArgument(Throwable passed) {
+    AtomicReference<Throwable> receivedThrowable = new AtomicReference<>();
+    Function<Throwable, String> function = unravel(ex -> {
+      receivedThrowable.set(ex);
+      return "OK";
+    });
+    function.apply(passed);
+    return receivedThrowable.get();
+  }
+
+  @Test
+  public void unravel_biFunction_success() {
+    Throwable received = captureUnravelBiFunctionArgument("OK", null);
+    assertThat(received, nullValue());
+  }
+
+  @Test
+  public void unravel_biFunction_exception() {
+    Exception expected = new IllegalArgumentException();
+    Throwable received = captureUnravelBiFunctionArgument(null, expected);
+    assertThat(received, sameInstance(expected));
+  }
+
+  @Test
+  public void unravel_biFunction_completionException_noCause() {
+    CompletionException expected = new NoCauseCompletionException();
+    Throwable received = captureUnravelBiFunctionArgument(null, expected);
+    assertThat(received, sameInstance(expected));
+  }
+
+  @Test
+  public void unravel_biFunction_completionException_nested() {
+    Exception expected = new IllegalArgumentException("bad");
+    Throwable received = captureUnravelBiFunctionArgument(null, new CompletionException(new CompletionException(expected)));
+    assertThat(received, sameInstance(expected));
+  }
+
+  private Throwable captureUnravelBiFunctionArgument(String value, Throwable exception) {
+    AtomicReference<Throwable> receivedThrowable = new AtomicReference<>();
+    BiFunction<String, Throwable, String> function = unravel((val, ex) -> {
+      receivedThrowable.set(ex);
+      return val;
+    });
+    function.apply(value, exception);
+    return receivedThrowable.get();
+  }
+
+  @Test
+  public void unravel_biConsumer_success() {
+    Throwable received = captureUnravelBiConsumerArgument("OK", null);
+    assertThat(received, nullValue());
+  }
+
+  @Test
+  public void unravel_biConsumer_exception() {
+    Exception expected = new IllegalArgumentException();
+    Throwable received = captureUnravelBiConsumerArgument(null, expected);
+    assertThat(received, sameInstance(expected));
+  }
+
+  @Test
+  public void unravel_biConsumer_completionException_noCause() {
+    CompletionException expected = new NoCauseCompletionException();
+    Throwable received = captureUnravelBiConsumerArgument(null, expected);
+    assertThat(received, sameInstance(expected));
+  }
+
+  @Test
+  public void unravel_biConsumer_completionException_nested() {
+    Exception expected = new IllegalArgumentException("bad");
+    Throwable received = captureUnravelBiConsumerArgument(null, new CompletionException(new CompletionException(expected)));
+    assertThat(received, sameInstance(expected));
+  }
+
+  private Throwable captureUnravelBiConsumerArgument(String value, Throwable exception) {
+    AtomicReference<Throwable> receivedThrowable = new AtomicReference<>();
+    BiConsumer<String, Throwable> consumer = unravel((val, ex) -> {
+      receivedThrowable.set(ex);
+    });
+    consumer.accept(value, exception);
+    return receivedThrowable.get();
+  }
+
+  @Test
   public void poll_done() throws Exception {
     final Supplier<Optional<String>> supplier = () -> Optional.of("done");
     final CompletableFuture<String> future = poll(supplier, Duration.ofMillis(2), executor);
@@ -1111,6 +1270,13 @@ public class CompletableFuturesTest {
         return null;
       }
       return super.join();
+    }
+  }
+
+  private static class NoCauseCompletionException extends CompletionException {
+    public NoCauseCompletionException() {
+      super();
+      initCause(null);
     }
   }
 
