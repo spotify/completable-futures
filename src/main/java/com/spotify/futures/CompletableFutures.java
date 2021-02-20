@@ -34,6 +34,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -763,4 +764,22 @@ public final class CompletableFutures {
     }
   }
 
+  /**
+   * Unwraps CompletionException and ExecutionException
+   *
+   * @param throwable
+   * @return the same throwable, or its cause if it was a CompletionException or an ExecutionException
+   */
+  public static Throwable unwrap(final Throwable throwable) {
+    if (throwable == null) {
+      throw new NullPointerException("throwable was null");
+    }
+    if (throwable instanceof CompletionException) {
+      return throwable.getCause();
+    }
+    if (throwable instanceof ExecutionException) {
+      return throwable.getCause();
+    }
+    return throwable;
+  }
 }
