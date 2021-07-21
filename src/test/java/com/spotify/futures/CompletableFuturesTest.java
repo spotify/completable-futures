@@ -388,7 +388,9 @@ public class CompletableFuturesTest {
     final CompletionStage<Integer> a = completedFuture(3);
     final CompletableFuture<Long> b = completedFuture(4L);
 
-    final List<? extends Number> result = Stream.of(a, b)
+    final Stream<? extends CompletionStage<? extends Number>> s = Stream.of(a, b);
+
+    final List<? extends Number> result = s
         .collect(joinList())
         .get();
     assertThat(result, contains(3, 4L));
