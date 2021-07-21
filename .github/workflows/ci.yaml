@@ -35,6 +35,6 @@ jobs:
           key: ${{ runner.os }}-java-${{ matrix.java_version }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-java-${{ matrix.java_version }}-m2
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots fmt:check verify
+        run: mvn --batch-mode --update-snapshots verify
       - name: Codecov
         uses: codecov/codecov-action@v1
