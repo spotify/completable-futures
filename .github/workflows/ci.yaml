@@ -14,11 +14,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    # Test on multiple Java versions, each LTS and using 16 as a substitute for
-    # 17 since it is not yet available.
+    # Test on each Java LTS version
     strategy:
       matrix:
-        java_version: [8, 11, 16]
+        java_version: [8, 11]
     steps:
       - uses: actions/checkout@v2
         with:
