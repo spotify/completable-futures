@@ -1,0 +1,39 @@
+name: Java CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: Build/Test
+
+    runs-on: ubuntu-latest
+
+    # Test on each Java LTS version
+    strategy:
+      matrix:
+        java_version: [8, 11]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Set up JDK ${{ matrix.java_version }}
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: ${{ matrix.java_version }}
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-java-${{ matrix.java_version }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-java-${{ matrix.java_version }}-m2
+      - name: Build with Maven
+        run: mvn --batch-mode --update-snapshots verify
+      - name: Codecov
+        uses: codecov/codecov-action@v1
