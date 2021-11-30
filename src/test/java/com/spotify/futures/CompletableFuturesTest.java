@@ -356,13 +356,13 @@ public class CompletableFuturesTest {
 
   @Test
   public void successfulAsListWithPartialFailureAction_someStagesFail_successfulResultsReturned() {
-    final String successfulResult = "a";
+    final String result = "a";
     final List<CompletionStage<String>> input =
-        asList(completedFuture(successfulResult),
+        asList(completedFuture(result),
             exceptionallyCompletedFuture(new RuntimeException()));
 
     assertThat(successfulAsList(input, partialFailureAction),
-        completesTo(singletonList(successfulResult)));
+        completesTo(singletonList(result)));
   }
 
   @Test
