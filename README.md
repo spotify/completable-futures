@@ -50,7 +50,7 @@ returns a future which completes to a map of all key values of its inputs:
   CompletableFuture<Map<String, String>> joined = CompletableFutures.allAsMap(futures);
 ```
 
-#### successfulAsList with default values
+#### successfulAsList with default value mapper
 
 Works like `allAsList`, but futures that fail will not fail the joined future. Instead, the
 defaultValueMapper function will be called once for each failed future and value returned will be
