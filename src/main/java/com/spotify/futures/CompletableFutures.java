@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.toMap;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
@@ -75,12 +78,7 @@ public final class CompletableFutures {
     // We use traditional for-loops instead of streams here for performance reasons,
     // see AllAsListBenchmark
 
-    @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<? extends T>[] all = new CompletableFuture[stages.size()];
-    for (int i = 0; i < stages.size(); i++) {
-      all[i] = stages.get(i).toCompletableFuture();
-    }
-
+    final CompletableFuture<? extends T>[] all = toCompletableFutures(stages);
     CompletableFuture<Void> allOf = CompletableFuture.allOf(all);
 
     for (int i = 0; i < all.length; i++) {
@@ -100,6 +98,16 @@ public final class CompletableFutures {
           }
           return result;
         });
+  }
+
+  @SuppressWarnings("unchecked") // generic array creation
+  private static <T> CompletableFuture<? extends T>[] toCompletableFutures(
+      List<? extends CompletionStage<? extends T>> stages) {
+    final CompletableFuture<? extends T>[] futures = new CompletableFuture[stages.size()];
+    for (int i = 0; i < stages.size(); i++) {
+      futures[i] = stages.get(i).toCompletableFuture();
+    }
+    return futures;
   }
 
   /**
@@ -161,6 +169,138 @@ public final class CompletableFutures {
     return stages.stream()
         .map(f -> f.exceptionally(defaultValueMapper))
         .collect(joinList());
+  }
+
+  /**
+   * Returns a new {@link CompletableFuture} which completes to a list of values of those input
+   * stages that succeeded. The list of results is in the same order as the input stages.
+   *
+   * <p>If some but not all of the stages fail, the given partial failure action will be called once
+   * with the exceptions of the failed stages. The exceptions will be in the same order as the input
+   * stages.
+   *
+   * <p>If all stages fail, a failed future will be returned with an exception that has the
+   * exceptions of the stages as suppressed exceptions. The suppressed exceptions will be in the
+   * same order as the input stages. The partial failure action will not be called.
+   *
+   * <p>If no stages are provided, a future holding an empty list will be returned.
+   *
+   * @param stages               the stages to combine.
+   * @param partialFailureAction an action that will be called if some but not all of the stages
+   *                             fail
+   * @param <T>                  the common type of all of the input stages, that determines the
+   *                             type of the output future
+   *
+   * @return a future that completes to a list of the results of the supplied stages that succeed
+   *
+   * @throws NullPointerException if the stages list or any of its elements are {@code null}
+   * @since 0.3.6
+   */
+  public static <T> CompletableFuture<List<T>> successfulAsList(
+      List<? extends CompletionStage<? extends T>> stages,
+      Consumer<List<Throwable>> partialFailureAction) {
+    return successfulAsList(stages, partialFailureAction, result -> true);
+  }
+
+  /**
+   * Returns a new {@link CompletableFuture} which completes to a list of values of those input
+   * stages that succeeded and that satisfy the given predicate. The list of results is in the same
+   * order as the input stages.
+   *
+   * <p>If some stages fail and some successful results satisfy the predicate, the given partial
+   * failure action will be called once with the exceptions of the failed stages. The exceptions
+   * will be in the same order as the input stages.
+   *
+   * <p>If some stages fail and no successful result satisfies the predicate, a failed future will
+   * be returned with an exception that has the exceptions of the failed stages as suppressed
+   * exceptions. The suppressed exceptions will be in the same order as the input stages. The
+   * partial failure action will not be called.
+   *
+   * <p>If all stages succeed but none satisfies the predicate, a future holding an empty list will
+   * be returned.
+   *
+   * <p>If no stages are provided, a future holding an empty list will be returned.
+   *
+   * @param stages               the stages to combine.
+   * @param partialFailureAction an action that will be called if some but not all of the stages
+   *                             fail
+   * @param resultPredicate      a predicate that should be satisfied by successful stages
+   * @param <T>                  the common type of all of the input stages, that determines the
+   *                             type of the output future
+   *
+   * @return a future that completes to a list of the results of the supplied stages that succeed
+   *     and that satisfy the predicate
+   *
+   * @throws NullPointerException if the stages list or any of its elements are {@code null}
+   * @since 0.3.6
+   */
+  public static <T> CompletableFuture<List<T>> successfulAsList(
+      List<? extends CompletionStage<? extends T>> stages,
+      Consumer<List<Throwable>> partialFailureAction,
+      Predicate<T> resultPredicate) {
+    return CompletableFuture.allOf(toCompletableFutures(stages))
+        .handle(
+            (ignoredResult, ignoredException) ->
+                getSuccessfulResults(stages, resultPredicate, partialFailureAction));
+  }
+
+  private static <T> List<T> getSuccessfulResults(
+      List<? extends CompletionStage<? extends T>> stages,
+      Predicate<T> resultPredicate,
+      Consumer<List<Throwable>> partialFailureAction) {
+    final List<T> successfulResults = getSuccessfulResults(stages, resultPredicate);
+    final List<Throwable> exceptions = getExceptions(stages);
+    if (successfulResults.isEmpty()) {
+      throwExceptionIfStagesFailed(exceptions);
+      return Collections.emptyList();
+    } else {
+      reportFailures(partialFailureAction, exceptions);
+      return successfulResults;
+    }
+  }
+
+  private static <T> List<T> getSuccessfulResults(
+      List<? extends CompletionStage<? extends T>> stages, Predicate<T> resultPredicate) {
+    final List<T> results = new ArrayList<>(stages.size());
+    for (int i = 0; i < stages.size(); i++) {
+      final CompletionStage<? extends T> stage = stages.get(i);
+      if (isCompletedSuccessfully(stage)) {
+        final T result = getCompleted(stage);
+        if (resultPredicate.test(result)) {
+          results.add(result);
+        }
+      }
+    }
+    return results;
+  }
+
+  private static boolean isCompletedSuccessfully(CompletionStage<?> stage) {
+    return !stage.toCompletableFuture().isCompletedExceptionally();
+  }
+
+  private static <T> List<Throwable> getExceptions(
+      List<? extends CompletionStage<? extends T>> stages) {
+    final List<Throwable> exceptions = new ArrayList<>();
+    for (int i = 0; i < stages.size(); i++) {
+      final CompletionStage<? extends T> stage = stages.get(i);
+      if (!isCompletedSuccessfully(stage)) {
+        exceptions.add(getException(stage));
+      }
+    }
+    return exceptions;
+  }
+
+  private static void throwExceptionIfStagesFailed(List<Throwable> exceptions) {
+    if (!exceptions.isEmpty()) {
+      throw new StageFailureException("All stages failed", exceptions);
+    }
+  }
+
+  private static void reportFailures(
+      Consumer<List<Throwable>> partialFailureAction, List<Throwable> exceptions) {
+    if (!exceptions.isEmpty()) {
+      partialFailureAction.accept(exceptions);
+    }
   }
 
   /**
@@ -542,12 +682,8 @@ public final class CompletableFutures {
    */
   public static <T> CompletionStage<T> combine(
           Function<CombinedFutures, T> function, List<? extends CompletionStage<?>> stages) {
-    @SuppressWarnings("unchecked") // generic array creation
-    final CompletableFuture<?>[] all = new CompletableFuture[stages.size()];
-    for (int i = 0; i < stages.size(); i++) {
-      all[i] = stages.get(i).toCompletableFuture();
-    }
-    return CompletableFuture.allOf(all).thenApply(ignored -> function.apply(new CombinedFutures(stages)));
+    return CompletableFuture.allOf(toCompletableFutures(stages))
+        .thenApply(ignored -> function.apply(new CombinedFutures(stages)));
   }
 
   /**

@@ -50,7 +50,7 @@ returns a future which completes to a map of all key values of its inputs:
   CompletableFuture<Map<String, String>> joined = CompletableFutures.allAsMap(futures);
 ```
 
-#### successfulAsList
+#### successfulAsList with default values
 
 Works like `allAsList`, but futures that fail will not fail the joined future. Instead, the
 defaultValueMapper function will be called once for each failed future and value returned will be
@@ -62,6 +62,35 @@ List<CompletableFuture<String>> input = asList(
     completedFuture("a"),
     exceptionallyCompletedFuture(new RuntimeException("boom")));
 CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, t -> "default");
+```
+
+#### successfulAsList with partial failure action
+
+Works like `allAsList`, but futures that fail will not fail the joined future. Instead, the provided
+partial failure action will be called with the exceptions of the failed futures.
+
+```java
+List<CompletableFuture<String>> input = asList(
+    completedFuture("a"),
+    exceptionallyCompletedFuture(new RuntimeException("boom")));
+CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(
+    input,
+    exceptions -> { System.err.println("Futures failed: " + exceptions); });
+```
+
+#### successfulAsList with partial failure action and predicate
+
+Works like `successfulAsList` with partial failure action, but only returns values that satisfy a
+predicate.
+
+```java
+List<CompletableFuture<String>> input = asList(
+    completedFuture("a"),
+    exceptionallyCompletedFuture(new RuntimeException("boom")));
+CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(
+    input,
+    exceptions -> System.err.println("Futures failed: " + exceptions),
+    value -> value.equals("a"));
 ```
 
 #### joinList

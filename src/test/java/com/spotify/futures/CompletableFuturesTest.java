@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.concurrent.CompletionException;
@@ -67,7 +68,10 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
+import static java.util.function.Predicate.isEqual;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasEntry;
@@ -80,24 +84,27 @@ import static org.hamcrest.core.Is.isA;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class CompletableFuturesTest {
 
+  private Consumer<List<Throwable>> partialFailureAction;
   private DeterministicScheduler executor;
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
+  @SuppressWarnings("unchecked")
   @Before
   public void setUp() {
+    partialFailureAction = (Consumer<List<Throwable>>) mock(Consumer.class);
     executor = new DeterministicScheduler();
   }
 
@@ -243,7 +250,7 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void successfulAsList_exceptionalAndNull() throws Exception {
+  public void successfulAsListWithDefaultValues_exceptionalAndNull() throws Exception {
     final List<CompletableFuture<String>> input = asList(
         completedFuture("a"),
         exceptionallyCompletedFuture(new RuntimeException("boom")),
@@ -252,6 +259,199 @@ public class CompletableFuturesTest {
     );
     final List<String> expected = asList("a", "default", null, "d");
     assertThat(successfulAsList(input, t -> "default"), completesTo(expected));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_null() {
+    exception.expect(NullPointerException.class);
+    successfulAsList(null, partialFailureAction);
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_null() {
+    exception.expect(NullPointerException.class);
+    successfulAsList(null, partialFailureAction, result -> true);
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_containsNull() {
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        null
+    );
+
+    exception.expect(NullPointerException.class);
+    successfulAsList(input, partialFailureAction);
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_containsNull() {
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        null
+    );
+
+    exception.expect(NullPointerException.class);
+    successfulAsList(input, partialFailureAction, result -> true);
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_empty() {
+    final List<CompletionStage<String>> input = emptyList();
+    assertThat(successfulAsList(input, partialFailureAction), completesTo(emptyList()));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_empty() {
+    final List<CompletionStage<String>> input = emptyList();
+    assertThat(successfulAsList(input, partialFailureAction, result -> true),
+        completesTo(emptyList()));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_successfulResults() {
+    final String result1 = "a";
+    final String result2 = "b";
+    final List<CompletionStage<String>> input =
+        asList(completedFuture(result1), completedFuture(result2));
+
+    assertThat(successfulAsList(input, partialFailureAction),
+        completesTo(asList(result1, result2)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_matchingResults() {
+    final String result1 = "a";
+    final String result2 = "b";
+    final List<CompletionStage<String>> input =
+        asList(completedFuture(result1), completedFuture(result2));
+
+    assertThat(successfulAsList(input, partialFailureAction, isEqual(result1)),
+        completesTo(singletonList(result1)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_noMatchingResults() {
+    final List<CompletionStage<String>> input = singletonList(completedFuture("a"));
+    assertThat(successfulAsList(input, partialFailureAction, result -> false),
+        completesTo(emptyList()));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_notFailFast() {
+    final CompletableFuture<String> future1 = incompleteFuture();
+    final CompletableFuture<String> future2 = incompleteFuture();
+    final List<CompletionStage<String>> input = asList(future1, future2);
+
+    final CompletableFuture<List<String>> result = successfulAsList(input, partialFailureAction);
+
+    // We complete the futures manually to control the completion order and to verify that we wait
+    // for the second future to complete even if the first one fails. We wouldn't be able to do that
+    // if we used completed futures above.
+    future1.completeExceptionally(new RuntimeException());
+    final String successfulResult = "a";
+    future2.complete(successfulResult);
+    assertThat(result, completesTo(singletonList(successfulResult)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_someStagesFail_successfulResultsReturned() {
+    final String successfulResult = "a";
+    final List<CompletionStage<String>> input =
+        asList(completedFuture(successfulResult),
+            exceptionallyCompletedFuture(new RuntimeException()));
+
+    assertThat(successfulAsList(input, partialFailureAction),
+        completesTo(singletonList(successfulResult)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_someStageFail_partialFailureActionCalled() {
+    final Throwable exception = new RuntimeException();
+    final List<CompletionStage<String>> input =
+        asList(completedFuture("a"), exceptionallyCompletedFuture(exception));
+
+    successfulAsList(input, partialFailureAction).join();
+
+    verify(partialFailureAction).accept(singletonList(exception));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_allStagesFail_exceptionReturned() {
+    final Throwable exception1 = new RuntimeException("a");
+    final Throwable exception2 = new RuntimeException("b");
+    final List<CompletionStage<String>> input =
+        asList(exceptionallyCompletedFuture(exception1), exceptionallyCompletedFuture(exception2));
+
+    final Throwable result = getException(successfulAsList(input, partialFailureAction));
+
+    assertThat(result, is(instanceOf(StageFailureException.class)));
+    assertThat(result.getSuppressed(), is(arrayContaining(exception1, exception2)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_allStagesFail_partialFailureActionNotCalled() {
+    final List<CompletionStage<String>> input =
+        asList(exceptionallyCompletedFuture(new RuntimeException("a")),
+            exceptionallyCompletedFuture(new RuntimeException("b")));
+
+    try {
+      successfulAsList(input, partialFailureAction).join();
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    verify(partialFailureAction, never()).accept(any());
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_someStagesFail_matchingResultsReturned() {
+    final String successfulResult = "a";
+    final List<CompletionStage<String>> input =
+        asList(completedFuture(successfulResult),
+            exceptionallyCompletedFuture(new RuntimeException()));
+
+    assertThat(successfulAsList(input, partialFailureAction, isEqual(successfulResult)),
+        completesTo(singletonList(successfulResult)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_someStagesFailAndSomeMatchingResults_partialFailureActionCalled() {
+    final String successfulResult = "a";
+    final Throwable exception = new RuntimeException();
+    final List<CompletionStage<String>> input =
+        asList(completedFuture(successfulResult), exceptionallyCompletedFuture(exception));
+
+    successfulAsList(input, partialFailureAction, isEqual(successfulResult)).join();
+
+    verify(partialFailureAction).accept(singletonList(exception));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_someStagesFailAndNoMatchingResults_exceptionReturned() {
+    final Throwable exception = new RuntimeException();
+    final List<CompletionStage<String>> input =
+        asList(completedFuture("a"), exceptionallyCompletedFuture(exception));
+
+    final Throwable result =
+        getException(successfulAsList(input, partialFailureAction, successfulResult -> false));
+
+    assertThat(result, is(instanceOf(StageFailureException.class)));
+    assertThat(result.getSuppressed(), is(arrayContaining(exception)));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureActionAndPredicate_someStagesFailAndNoMatchingResults_partialFailureActionNotCalled() {
+    final List<CompletionStage<String>> input =
+        asList(completedFuture("a"), exceptionallyCompletedFuture(new RuntimeException()));
+
+    try {
+      successfulAsList(input, partialFailureAction, successfulResult -> false).join();
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    verify(partialFailureAction, never()).accept(any());
   }
 
   @Test
