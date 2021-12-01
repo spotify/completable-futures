@@ -367,23 +367,6 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void successfulAsListWithPartialFailureAction_someStagesFail_notFailingFast() {
-    final CompletableFuture<String> future1 = incompleteFuture();
-    final CompletableFuture<String> future2 = incompleteFuture();
-    final List<CompletionStage<String>> input = asList(future1, future2);
-
-    final CompletableFuture<List<String>> result = successfulAsList(input, partialFailureAction);
-
-    // We complete the futures manually to control the completion order and to verify that we wait
-    // for the second future to complete even if the first one fails. We wouldn't be able to do that
-    // if we used completed futures above.
-    future1.completeExceptionally(new RuntimeException());
-    final String successfulResult = "a";
-    future2.complete(successfulResult);
-    assertThat(result, completesTo(singletonList(successfulResult)));
-  }
-
-  @Test
   public void successfulAsListWithPartialFailureAction_someStagesFail_successfulResultsReturned() {
     final String result = "a";
     final List<CompletionStage<String>> input = asList(
@@ -405,6 +388,23 @@ public class CompletableFuturesTest {
     successfulAsList(input, partialFailureAction).join();
 
     verify(partialFailureAction).accept(singletonList(exception));
+  }
+
+  @Test
+  public void successfulAsListWithPartialFailureAction_someStagesFail_notFailingFast() {
+    final CompletableFuture<String> future1 = incompleteFuture();
+    final CompletableFuture<String> future2 = incompleteFuture();
+    final List<CompletionStage<String>> input = asList(future1, future2);
+
+    final CompletableFuture<List<String>> result = successfulAsList(input, partialFailureAction);
+
+    // We complete the futures manually to control the completion order and to verify that we wait
+    // for the second future to complete even if the first one fails. We wouldn't be able to do that
+    // if we used completed futures above.
+    future1.completeExceptionally(new RuntimeException());
+    final String successfulResult = "a";
+    future2.complete(successfulResult);
+    assertThat(result, completesTo(singletonList(successfulResult)));
   }
 
   @Test
