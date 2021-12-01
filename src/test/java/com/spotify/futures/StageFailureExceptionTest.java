@@ -19,11 +19,11 @@
  */
 package com.spotify.futures;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.is;
 
-import java.util.Arrays;
 import org.junit.Test;
 
 public class StageFailureExceptionTest {
@@ -34,7 +34,7 @@ public class StageFailureExceptionTest {
     Throwable exception2 = new RuntimeException("2");
 
     StageFailureException stageFailureException =
-        new StageFailureException("message", Arrays.asList(exception1, exception2));
+        new StageFailureException("message", asList(exception1, exception2));
 
     assertThat(stageFailureException.getSuppressed(), is(arrayContaining(exception1, exception2)));
   }
