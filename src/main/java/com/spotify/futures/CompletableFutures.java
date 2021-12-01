@@ -185,14 +185,12 @@ public final class CompletableFutures {
    *
    * <p>If no stages are provided, a future holding an empty list will be returned.
    *
-   * @param stages               the stages to combine.
+   * @param stages               the stages to combine
    * @param partialFailureAction an action that will be called if some but not all of the stages
    *                             fail
-   * @param <T>                  the common type of all of the input stages, that determines the
+   * @param <T>                  the common type of all of the input stages that determines the
    *                             type of the output future
-   *
    * @return a future that completes to a list of the results of the supplied stages that succeed
-   *
    * @throws NullPointerException if the stages list or any of its elements are {@code null}
    * @since 0.3.6
    */
@@ -221,16 +219,14 @@ public final class CompletableFutures {
    *
    * <p>If no stages are provided, a future holding an empty list will be returned.
    *
-   * @param stages               the stages to combine.
+   * @param stages               the stages to combine
    * @param partialFailureAction an action that will be called if some but not all of the stages
    *                             fail
    * @param resultPredicate      a predicate that should be satisfied by successful stages
-   * @param <T>                  the common type of all of the input stages, that determines the
+   * @param <T>                  the common type of all of the input stages that determines the
    *                             type of the output future
-   *
    * @return a future that completes to a list of the results of the supplied stages that succeed
    *     and that satisfy the predicate
-   *
    * @throws NullPointerException if the stages list or any of its elements are {@code null}
    * @since 0.3.6
    */
@@ -254,7 +250,7 @@ public final class CompletableFutures {
       throwExceptionIfStagesFailed(exceptions);
       return Collections.emptyList();
     } else {
-      reportFailures(partialFailureAction, exceptions);
+      reportFailures(exceptions, partialFailureAction);
       return successfulResults;
     }
   }
@@ -264,7 +260,7 @@ public final class CompletableFutures {
     final List<T> results = new ArrayList<>(stages.size());
     for (int i = 0; i < stages.size(); i++) {
       final CompletionStage<? extends T> stage = stages.get(i);
-      if (isCompletedSuccessfully(stage)) {
+      if (!stage.toCompletableFuture().isCompletedExceptionally()) {
         final T result = getCompleted(stage);
         if (resultPredicate.test(result)) {
           results.add(result);
@@ -274,16 +270,11 @@ public final class CompletableFutures {
     return results;
   }
 
-  private static boolean isCompletedSuccessfully(CompletionStage<?> stage) {
-    return !stage.toCompletableFuture().isCompletedExceptionally();
-  }
-
-  private static <T> List<Throwable> getExceptions(
-      List<? extends CompletionStage<? extends T>> stages) {
+  private static List<Throwable> getExceptions(List<? extends CompletionStage<?>> stages) {
     final List<Throwable> exceptions = new ArrayList<>();
     for (int i = 0; i < stages.size(); i++) {
-      final CompletionStage<? extends T> stage = stages.get(i);
-      if (!isCompletedSuccessfully(stage)) {
+      final CompletionStage<?> stage = stages.get(i);
+      if (stage.toCompletableFuture().isCompletedExceptionally()) {
         exceptions.add(getException(stage));
       }
     }
@@ -297,7 +288,7 @@ public final class CompletableFutures {
   }
 
   private static void reportFailures(
-      Consumer<List<Throwable>> partialFailureAction, List<Throwable> exceptions) {
+      List<Throwable> exceptions, Consumer<List<Throwable>> partialFailureAction) {
     if (!exceptions.isEmpty()) {
       partialFailureAction.accept(exceptions);
     }

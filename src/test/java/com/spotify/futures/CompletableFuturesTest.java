@@ -309,22 +309,38 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void successfulAsListWithPartialFailureAction_allStagesSucceed_successfulResultsReturned() {
+  public void successfulAsListWithPartialFailureAction_allStagesSucceed_resultsReturned() {
     final String result1 = "a";
     final String result2 = "b";
-    final List<CompletionStage<String>> input =
-        asList(completedFuture(result1), completedFuture(result2));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture(result1),
+        completedFuture(result2)
+    );
 
     assertThat(successfulAsList(input, partialFailureAction),
         completesTo(asList(result1, result2)));
   }
 
   @Test
+  public void successfulAsListWithPartialFailureAction_allStagesSucceed_partialFailureActionNotCalled() {
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        completedFuture("b")
+    );
+
+    successfulAsList(input, partialFailureAction).join();
+
+    verify(partialFailureAction, never()).accept(any());
+  }
+
+  @Test
   public void successfulAsListWithPredicate_allStagesSucceed_matchingResultsReturned() {
     final String result1 = "a";
     final String result2 = "b";
-    final List<CompletionStage<String>> input =
-        asList(completedFuture(result1), completedFuture(result2));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture(result1),
+        completedFuture(result2)
+    );
 
     assertThat(successfulAsList(input, partialFailureAction, isEqual(result1)),
         completesTo(singletonList(result1)));
@@ -333,8 +349,21 @@ public class CompletableFuturesTest {
   @Test
   public void successfulAsListWithPredicate_allStagesSucceed_noMatchingResults() {
     final List<CompletionStage<String>> input = singletonList(completedFuture("a"));
+
     assertThat(successfulAsList(input, partialFailureAction, result -> false),
         completesTo(emptyList()));
+  }
+
+  @Test
+  public void successfulAsListWithPredicate_allStagesSucceed_partialFailureActionNotCalled() {
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        completedFuture("b")
+    );
+
+    successfulAsList(input, partialFailureAction, result -> true).join();
+
+    verify(partialFailureAction, never()).accept(any());
   }
 
   @Test
@@ -357,19 +386,21 @@ public class CompletableFuturesTest {
   @Test
   public void successfulAsListWithPartialFailureAction_someStagesFail_successfulResultsReturned() {
     final String result = "a";
-    final List<CompletionStage<String>> input =
-        asList(completedFuture(result),
-            exceptionallyCompletedFuture(new RuntimeException()));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture(result),
+        exceptionallyCompletedFuture(new RuntimeException())
+    );
 
-    assertThat(successfulAsList(input, partialFailureAction),
-        completesTo(singletonList(result)));
+    assertThat(successfulAsList(input, partialFailureAction), completesTo(singletonList(result)));
   }
 
   @Test
   public void successfulAsListWithPartialFailureAction_someStagesFail_partialFailureActionCalled() {
     final Throwable exception = new RuntimeException();
-    final List<CompletionStage<String>> input =
-        asList(completedFuture("a"), exceptionallyCompletedFuture(exception));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(exception)
+    );
 
     successfulAsList(input, partialFailureAction).join();
 
@@ -380,8 +411,10 @@ public class CompletableFuturesTest {
   public void successfulAsListWithPartialFailureAction_allStagesFail_exceptionReturned() {
     final Throwable exception1 = new RuntimeException("a");
     final Throwable exception2 = new RuntimeException("b");
-    final List<CompletionStage<String>> input =
-        asList(exceptionallyCompletedFuture(exception1), exceptionallyCompletedFuture(exception2));
+    final List<CompletionStage<String>> input = asList(
+        exceptionallyCompletedFuture(exception1),
+        exceptionallyCompletedFuture(exception2)
+    );
 
     final Throwable result = getException(successfulAsList(input, partialFailureAction));
 
@@ -391,9 +424,10 @@ public class CompletableFuturesTest {
 
   @Test
   public void successfulAsListWithPartialFailureAction_allStagesFail_partialFailureActionNotCalled() {
-    final List<CompletionStage<String>> input =
-        asList(exceptionallyCompletedFuture(new RuntimeException("a")),
-            exceptionallyCompletedFuture(new RuntimeException("b")));
+    final List<CompletionStage<String>> input = asList(
+        exceptionallyCompletedFuture(new RuntimeException("a")),
+        exceptionallyCompletedFuture(new RuntimeException("b"))
+    );
 
     try {
       successfulAsList(input, partialFailureAction).join();
@@ -407,9 +441,10 @@ public class CompletableFuturesTest {
   @Test
   public void successfulAsListWithPredicate_someStagesFail_matchingResultsReturned() {
     final String result = "a";
-    final List<CompletionStage<String>> input =
-        asList(completedFuture(result),
-            exceptionallyCompletedFuture(new RuntimeException()));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture(result),
+        exceptionallyCompletedFuture(new RuntimeException())
+    );
 
     assertThat(successfulAsList(input, partialFailureAction, isEqual(result)),
         completesTo(singletonList(result)));
@@ -419,8 +454,10 @@ public class CompletableFuturesTest {
   public void successfulAsListWithPredicate_someStagesFailAndSomeMatchingResults_partialFailureActionCalled() {
     final String result = "a";
     final Throwable exception = new RuntimeException();
-    final List<CompletionStage<String>> input =
-        asList(completedFuture(result), exceptionallyCompletedFuture(exception));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture(result),
+        exceptionallyCompletedFuture(exception)
+    );
 
     successfulAsList(input, partialFailureAction, isEqual(result)).join();
 
@@ -430,8 +467,10 @@ public class CompletableFuturesTest {
   @Test
   public void successfulAsListWithPredicate_someStagesFailAndNoMatchingResults_exceptionReturned() {
     final Throwable exception = new RuntimeException();
-    final List<CompletionStage<String>> input =
-        asList(completedFuture("a"), exceptionallyCompletedFuture(exception));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(exception)
+    );
 
     final Throwable result =
         getException(successfulAsList(input, partialFailureAction, successfulResult -> false));
@@ -442,11 +481,45 @@ public class CompletableFuturesTest {
 
   @Test
   public void successfulAsListWithPredicate_someStagesFailAndNoMatchingResults_partialFailureActionNotCalled() {
-    final List<CompletionStage<String>> input =
-        asList(completedFuture("a"), exceptionallyCompletedFuture(new RuntimeException()));
+    final List<CompletionStage<String>> input = asList(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(new RuntimeException())
+    );
 
     try {
       successfulAsList(input, partialFailureAction, result -> false).join();
+    } catch (Exception e) {
+      // Ignore
+    }
+
+    verify(partialFailureAction, never()).accept(any());
+  }
+
+  @Test
+  public void successfulAsListWithPredicate_allStagesFail_exceptionReturned() {
+    final Throwable exception1 = new RuntimeException("a");
+    final Throwable exception2 = new RuntimeException("b");
+    final List<CompletionStage<String>> input = asList(
+        exceptionallyCompletedFuture(exception1),
+        exceptionallyCompletedFuture(exception2)
+    );
+
+    final Throwable result =
+        getException(successfulAsList(input, partialFailureAction, successfulResult -> true));
+
+    assertThat(result, is(instanceOf(StageFailureException.class)));
+    assertThat(result.getSuppressed(), is(arrayContaining(exception1, exception2)));
+  }
+
+  @Test
+  public void successfulAsListWithPredicate_allStagesFail_partialFailureActionNotCalled() {
+    final List<CompletionStage<String>> input = asList(
+        exceptionallyCompletedFuture(new RuntimeException("a")),
+        exceptionallyCompletedFuture(new RuntimeException("b"))
+    );
+
+    try {
+      successfulAsList(input, partialFailureAction, result -> true).join();
     } catch (Exception e) {
       // Ignore
     }
