@@ -763,4 +763,17 @@ public final class CompletableFutures {
     }
   }
 
+  /**
+   * Returns a new CompletableFuture that is completed with the value obtained by calling the given Supplier.
+   * This is a convenience method for ensuring that exceptions thrown by the supplier will be stored in the returned
+   * future.
+   *
+   * @param supplier - a function returning the value to be used to complete the returned CompletableFuture
+   * @param <U> - the function's return type
+   * @return the new CompletableFuture
+   */
+  public static <U> CompletableFuture<U> supply(Supplier<U> supplier) {
+    return CompletableFuture.completedFuture(supplier).thenApply(Supplier::get);
+  }
+
 }

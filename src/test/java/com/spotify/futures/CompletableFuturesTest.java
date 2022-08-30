@@ -81,6 +81,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -1074,6 +1075,22 @@ public class CompletableFuturesTest {
 
     executor.tick(5, MILLISECONDS);
     assertThat(executor.isIdle(), is(true));
+  }
+
+  @Test
+  public void supply_storeException() {
+    final IllegalArgumentException exception = new IllegalArgumentException();
+    final CompletableFuture<Object> future = CompletableFutures.supply(() -> {
+      throw exception;
+    });
+    assertTrue(future.isDone());
+    assertEquals(exception, getException(future));
+  }
+
+  @Test
+  public void supply_storeValue() {
+    final CompletableFuture<String> future = CompletableFutures.supply(() -> "hello world");
+    assertEquals("hello world", CompletableFutures.getCompleted(future));
   }
 
   private static <T> CompletableFuture<T> incompleteFuture() {

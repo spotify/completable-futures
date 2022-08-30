@@ -190,6 +190,16 @@ Creates a new future that is already exceptionally completed with the given exce
 return CompletableFutures.exceptionallyCompletedFuture(new RuntimeException("boom"));
 ```
 
+#### supply
+
+Like `CompletableFuture.supplyAsync` but does not run asynchronously.
+This is useful when the work in the supplier does not need to run on a different thread
+and you want exceptions thrown by the supplier to be stored in the future instead of throwing in the current thread.
+
+```java
+CompletionStage<String> future = supply(() -> "hello world");
+```
+
 ## License
 
 Copyright 2016 Spotify AB.
