@@ -206,3 +206,14 @@ See the instructions in [spotify/foss-root][foss-root]
 
 [code-of-conduct]: https://github.com/spotify/code-of-conduct/blob/master/code-of-conduct.md
 [foss-root]: https://github.com/spotify/foss-root
+
+## Ownership
+
+The Weaver squad is currently owning this project internally.
+We are currently in the evaluating process of the ownership of this and other OSS Java libraries.
+The ownership takes into account **ONLY** security maintenance.
+
+This repo is also co-owned by other people:
+
+* [mattnworb](https://github.com/mattnworb)
+* [spkrka](https://github.com/spkrka)
