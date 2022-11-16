@@ -1,0 +1,7 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: completable-futures
+spec:
+  type: library
+  owner: weaver
