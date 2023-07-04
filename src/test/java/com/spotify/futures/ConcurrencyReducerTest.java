@@ -2,7 +2,7 @@
  * -\-\-
  * completable-futures
  * --
- * Copyright (C) 2016 - 2020 Spotify AB
+ * Copyright (C) 2016 - 2023 Spotify AB
  * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,10 @@ package com.spotify.futures;
 import static com.spotify.futures.CompletableFutures.getException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,24 +35,24 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ConcurrencyReducerTest {
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testTooLowConcurrency() throws Exception {
-    ConcurrencyReducer.create(0, 10);
+  @Test
+  public void testTooLowConcurrency() {
+    assertThrows(IllegalArgumentException.class, () -> ConcurrencyReducer.create(0, 10));
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testTooLowQueueSize() throws Exception {
-    ConcurrencyReducer.create(10, 0);
+  @Test
+  public void testTooLowQueueSize() {
+    assertThrows(IllegalArgumentException.class, () -> ConcurrencyReducer.create(10, 0));
   }
 
-  @Test(expected = NullPointerException.class)
-  public void testNullJob() throws Exception {
+  @Test
+  public void testNullJob() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
-    limiter.add(null);
+    assertThrows(NullPointerException.class, () -> limiter.add(null));
   }
 
   @Test()
@@ -65,7 +66,7 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testJobReturnsNull() throws Exception {
+  public void testJobReturnsNull() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     final CompletableFuture<String> response = limiter.add(job(null));
     assertTrue(response.isDone());
@@ -74,10 +75,11 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testJobThrows() throws Exception {
+  public void testJobThrows() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     final CompletableFuture<String> response =
-        limiter.add(() -> {
+        limiter.add(
+            () -> {
               throw new IllegalStateException();
             });
 
@@ -87,10 +89,11 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testJobReturnsFailure() throws Exception {
+  public void testJobReturnsFailure() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(1, 10);
     final CompletionStage<String> response =
-        limiter.add(job(CompletableFutures.exceptionallyCompletedFuture(new IllegalStateException())));
+        limiter.add(
+            job(CompletableFutures.exceptionallyCompletedFuture(new IllegalStateException())));
 
     assertTrue(response.toCompletableFuture().isDone());
     final Throwable exception = getException(response);
@@ -98,7 +101,7 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testCancellation() throws Exception {
+  public void testCancellation() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(2, 10);
     final CompletableFuture<String> request1 = new CompletableFuture<>();
     final CompletableFuture<String> request2 = new CompletableFuture<>();
@@ -144,7 +147,7 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testSimple() throws Exception {
+  public void testSimple() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(2, 10);
     final CompletableFuture<String> request1 = new CompletableFuture<>();
     final CompletableFuture<String> request2 = new CompletableFuture<>();
@@ -181,7 +184,7 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testLongRunning() throws Exception {
+  public void testLongRunning() {
     final AtomicInteger activeCount = new AtomicInteger();
     final AtomicInteger maxCount = new AtomicInteger();
     final int queueSize = 11;
@@ -213,7 +216,7 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testQueueSize() throws Exception {
+  public void testQueueSize() {
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(10, 10);
     for (int i = 0; i < 20; i++) {
       limiter.add(job(new CompletableFuture<>()));
@@ -226,7 +229,7 @@ public class ConcurrencyReducerTest {
   }
 
   @Test
-  public void testQueueSizeCounter() throws Exception {
+  public void testQueueSizeCounter() {
     final CompletableFuture<String> future = new CompletableFuture<>();
 
     final ConcurrencyReducer<String> limiter = ConcurrencyReducer.create(10, 10);
@@ -264,7 +267,7 @@ public class ConcurrencyReducerTest {
     }
 
     @Override
-    public CompletionStage<String> call() throws Exception {
+    public CompletionStage<String> call() {
       if (activeCount.get() > maxCount.get()) {
         maxCount.set(activeCount.get());
       }
