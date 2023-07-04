@@ -17,7 +17,7 @@ jobs:
     # Test on each Java LTS version
     strategy:
       matrix:
-        java_version: [8, 11]
+        java_version: [8, 11, 17]
     steps:
       - uses: actions/checkout@v2
         with:
