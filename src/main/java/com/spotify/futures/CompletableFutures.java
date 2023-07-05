@@ -41,6 +41,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.Stream;
 
 /**
  * A collection of static utility methods that extend the
@@ -145,6 +146,34 @@ public final class CompletableFutures {
    * stages, the defaultValueMapper will be called, and the value returned from that function will
    * be put in the resulting list.
    *
+   * <p>If no stages are provided in the map, returns a future holding an empty list.
+   *
+   * @param stagesMap the stages to combine.
+   * @param defaultValueMapper a function that will be called when a future completes exceptionally
+   *     to provide a default value to place in the resulting list
+   * @param <S> the key or reference to each completion stage, used to map on exceptions
+   * @param <T> the common type of all the input stages, that determines the type of the output
+   *     future
+   * @return a future that completes to a list of the results of the supplied stages
+   * @throws NullPointerException if the stages map or any of its values are {@code null}
+   */
+  public static <S, T> CompletableFuture<List<T>> successfulAsList(
+      Map<S, ? extends CompletionStage<T>> stagesMap,
+      BiFunction<S, Throwable, ? extends T> defaultValueMapper) {
+    return stagesMap.entrySet().stream()
+        .map(
+            f ->
+                f.getValue()
+                    .exceptionally(throwable -> defaultValueMapper.apply(f.getKey(), throwable)))
+        .collect(joinList());
+  }
+
+  /**
+   * Returns a new {@link CompletableFuture} which completes to a list of values of those input
+   * stages that succeeded. The list of results is in the same order as the input stages. For failed
+   * stages, the defaultValueMapper will be called, and the value returned from that function will
+   * be put in the resulting list.
+   *
    * <p>If no stages are provided, returns a future holding an empty list.
    *
    * @param stages the stages to combine.
@@ -155,6 +184,13 @@ public final class CompletableFutures {
    * @return a future that completes to a list of the results of the supplied stages
    * @throws NullPointerException if the stages list or any of its elements are {@code null}
    */
+  public static <T> CompletableFuture<List<T>> successfulAsList(
+      Stream<? extends CompletionStage<T>> stages,
+      Function<Throwable, ? extends T> defaultValueMapper) {
+    return stages.map(f -> f.exceptionally(defaultValueMapper)).collect(joinList());
+  }
+
+  /** Helper method to allow input of a list instead of a stream. */
   public static <T> CompletableFuture<List<T>> successfulAsList(
       List<? extends CompletionStage<T>> stages,
       Function<Throwable, ? extends T> defaultValueMapper) {

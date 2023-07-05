@@ -64,6 +64,24 @@ List<CompletableFuture<String>> input = asList(
 CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, t -> "default");
 ```
 
+There are also variants that accept a stream:
+```java
+Stream<CompletableFuture<String>> input = asList(
+    completedFuture("a"),
+    exceptionallyCompletedFuture(new RuntimeException("boom"))).stream();
+CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, t -> "default");
+```
+
+and a map to allow passing other information about each future into the default object:
+```java
+Map<Integer, CompletableFuture<String>> input = asMap(
+    asList(1, 2),
+    asList(
+        completedFuture("a"),
+        exceptionallyCompletedFuture(new RuntimeException("boom"))));
+CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, (num, t) -> num + " default");
+```
+
 #### joinList
 
 `joinList` is a stream collector that combines multiple futures into a list. This is handy if you

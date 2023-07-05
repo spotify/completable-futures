@@ -77,6 +77,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.hamcrest.CustomTypeSafeMatcher;
@@ -221,6 +222,61 @@ public class CompletableFuturesTest {
             completedFuture("d"));
     final List<String> expected = asList("a", "default", null, "d");
     assertThat(successfulAsList(input, t -> "default"), completesTo(expected));
+  }
+
+  @Test
+  public void successfulAsListFromMap_whenMixOfFailureAndSuccess() {
+    Map<String, CompletionStage<Boolean>> map = new HashMap<>();
+    map.put("hello2", completedFuture(true));
+    map.put("hello", exceptionallyCompletedFuture(new RuntimeException("I failed")));
+    BiFunction<String, Throwable, Boolean> resultsMapper = (s, t) -> s.length() < 3;
+
+    final List<Boolean> expected = asList(true, false);
+    final CompletableFuture<List<Boolean>> actual = successfulAsList(map, resultsMapper);
+    assertThat(actual, completesTo(expected));
+  }
+
+  @Test
+  public void successfulAsListFromMap_throwWhenMapIsNull() {
+    Map<String, CompletionStage<Boolean>> map = null;
+    BiFunction<String, Throwable, Boolean> resultsMapper = (s, t) -> true;
+
+    assertThrows(NullPointerException.class, () -> successfulAsList(map, resultsMapper));
+  }
+
+  @Test
+  public void successfulAsListFromMap_throwWhenOneValueIsNull() {
+    Map<String, CompletionStage<Boolean>> map =
+        asMap(asList("hello", "hello"), asList(completedFuture(true), null));
+    BiFunction<String, Throwable, Boolean> resultsMapper = (s, t) -> s.length() < 3;
+
+    assertThrows(NullPointerException.class, () -> successfulAsList(map, resultsMapper));
+  }
+
+  @Test
+  public void successfulAsListFromMap_exceptionalAndNull() {
+    Map<String, CompletionStage<String>> map =
+        asMap(
+            asList("1", "2", "3", "4"),
+            asList(
+                completedFuture("a"),
+                exceptionallyCompletedFuture(new RuntimeException("boom")),
+                completedFuture(null),
+                completedFuture("d")));
+    final List<String> expected = asList("a", "2 default", null, "d");
+    assertThat(successfulAsList(map, (s, t) -> s + " default"), completesTo(expected));
+  }
+
+  @Test
+  public void successfulAsListFromStream_exceptionalAndNull() {
+    final List<CompletableFuture<String>> input =
+        asList(
+            completedFuture("a"),
+            exceptionallyCompletedFuture(new RuntimeException("boom")),
+            completedFuture(null),
+            completedFuture("d"));
+    final List<String> expected = asList("a", "default", null, "d");
+    assertThat(successfulAsList(input.stream(), t -> "default"), completesTo(expected));
   }
 
   @Test
