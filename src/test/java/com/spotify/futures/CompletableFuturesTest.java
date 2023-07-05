@@ -78,6 +78,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.hamcrest.CustomTypeSafeMatcher;
@@ -268,15 +269,22 @@ public class CompletableFuturesTest {
   }
 
   @Test
-  public void successfulAsListFromStream_exceptionalAndNull() {
-    final List<CompletableFuture<String>> input =
-        asList(
-            completedFuture("a"),
-            exceptionallyCompletedFuture(new RuntimeException("boom")),
-            completedFuture(null),
-            completedFuture("d"));
-    final List<String> expected = asList("a", "default", null, "d");
-    assertThat(successfulAsList(input.stream(), t -> "default"), completesTo(expected));
+  public void successfulAsListFromArguments_exceptionalAndNull() {
+    List<Integer> arguments = asList(1, 2, 3, 4);
+    Function<Integer, CompletableFuture<String>> futureMapper = a -> {
+      if (a == 2) {
+        return exceptionallyCompletedFuture(new RuntimeException("OH NO"));
+      } else if (a == 3) {
+        return completedFuture(null);
+      }
+      return completedFuture("" + a);
+    };
+    BiFunction<Integer, Throwable, String> resultsMapper = (s, t) -> s + " default";
+    final List<String> expected = asList("1", "2 default", null, "4");
+
+    assertThat(successfulAsList(
+        arguments, futureMapper, resultsMapper
+    ), completesTo(expected));
   }
 
   @Test

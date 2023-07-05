@@ -64,12 +64,11 @@ List<CompletableFuture<String>> input = asList(
 CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, t -> "default");
 ```
 
-There are also variants that accept a stream:
+There are also variants that accept a list of arguments and a function to turn them into CompletableFutures:
 ```java
-Stream<CompletableFuture<String>> input = asList(
-    completedFuture("a"),
-    exceptionallyCompletedFuture(new RuntimeException("boom"))).stream();
-CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, t -> "default");
+    List<Integer> input = asList(1, 2, 3, 4);
+    Function<Integer, CompletableFuture<String>> futureMapper = a -> completedFuture("" + a);
+    CompletableFuture<List<String>> joined = CompletableFutures.successfulAsList(input, futureMapper, (s, t) -> "default");
 ```
 
 and a map to allow passing other information about each future into the default object:
