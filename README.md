@@ -1,5 +1,5 @@
 # completable-futures
-[![Build Status](https://img.shields.io/travis/spotify/completable-futures/master.svg)](https://travis-ci.org/spotify/completable-futures)
+[![Build Status](https://github.com/spotify/completable-futures/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/spotify/completable-futures/actions/workflows/ci.yaml)
 [![Test Coverage](https://img.shields.io/codecov/c/github/spotify/completable-futures/master.svg)](https://codecov.io/github/spotify/completable-futures?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/com.spotify/completable-futures.svg)](https://maven-badges.herokuapp.com/maven-central/com.spotify/completable-futures)
 [![License](https://img.shields.io/github/license/spotify/completable-futures.svg)](LICENSE)
