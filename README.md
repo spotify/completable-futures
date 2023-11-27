@@ -182,6 +182,16 @@ CompletionStage<CompletionStage<String>> wrapped = completedFuture(completedFutu
 CompletionStage<String> unwrapped = CompletableFutures.dereference(wrapped);
 ```
 
+#### supplyAsyncCompose
+
+Like `CompletableFuture.supplyAsync` but unwraps a `CompletionStage<CompletionStage<T>>` to a plain `CompletionStage<T>` when
+the `Supplier` returns a `CompletionStage`.
+
+```java
+CompletionStage<String> suppliedStage = completedFuture("hello").thenApply(stage -> stage + "-chained");
+CompletionStage<String> outputStage = CompletableFutures.supplyAsyncCompose(suppliedStage);
+```
+
 #### exceptionallyCompletedFuture
 
 Creates a new future that is already exceptionally completed with the given exception.
