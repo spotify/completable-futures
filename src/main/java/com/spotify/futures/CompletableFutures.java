@@ -366,6 +366,7 @@ public final class CompletableFutures {
    * @param supplier a {@link Supplier} with a return value of {@link CompletionStage}
    * @param <U> the type of the supplied stage's value
    * @return the new {@link CompletionStage}
+   * @since 0.3.6
    */
   public static <U> CompletionStage<U> supplyAsyncCompose(Supplier<CompletionStage<U>> supplier) {
     return dereference(CompletableFuture.supplyAsync(supplier));
@@ -383,6 +384,7 @@ public final class CompletableFutures {
    * @param executor a {@link Executor} the executor to use for asynchronous execution
    * @param <U> the type of the supplied stage's value
    * @return the new {@link CompletionStage}
+   * @since 0.3.6
    */
   public static <U> CompletionStage<U> supplyAsyncCompose(
           Supplier<CompletionStage<U>> supplier, Executor executor) {
