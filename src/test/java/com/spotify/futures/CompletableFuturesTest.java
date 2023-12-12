@@ -515,6 +515,33 @@ public class CompletableFuturesTest {
   }
 
   @Test
+  public void supplyAsyncCompose_completed() {
+    final CompletionStage<String> future = completedFuture("hello");
+    final CompletionStage<String> composed = CompletableFutures.supplyAsyncCompose(() -> future);
+
+    assertThat(composed, completesTo("hello"));
+  }
+
+  @Test
+  public void supplyAsyncCompose_chain_completed() {
+    final CompletionStage<String> future = completedFuture("hello").thenApply(previous -> previous + "-chained");
+    final CompletionStage<String> composed = CompletableFutures.supplyAsyncCompose(() -> future);
+
+    assertThat(composed, completesTo("hello-chained"));
+  }
+
+  @Test
+  public void supplyAsyncCompose_failure() {
+    final IllegalStateException ex = new IllegalStateException();
+    final CompletionStage<String> future = exceptionallyCompletedFuture(ex);
+    final CompletionStage<String> composed = CompletableFutures.supplyAsyncCompose(() -> future);
+
+    final CompletionException e =
+            assertThrows(CompletionException.class, () -> getCompleted(composed));
+    assertThat(e.getCause(), is(equalTo(ex)));
+  }
+
+  @Test
   public void handleCompose_completed() {
     final CompletionStage<String> future = exceptionallyCompletedFuture(new Exception("boom"));
 

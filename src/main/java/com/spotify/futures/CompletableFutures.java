@@ -34,6 +34,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -352,6 +353,42 @@ public final class CompletableFutures {
       CompletionStage<T> stage,
       Function<Throwable, ? extends CompletionStage<T>> fn) {
     return dereference(wrap(stage).exceptionally(fn));
+  }
+
+  /**
+   * This allows for a stage to be the return type of supplier when using supplyAsync and returns a plain stage.
+   *
+   * <p>This differs from {@link
+   * java.util.concurrent.CompletableFuture#supplyAsync(Supplier)} in that the
+   * function should return a {@link java.util.concurrent.CompletionStage} rather than the {@link CompletionStage} of
+   * a {@link CompletionStage} of a value when the return value of the {@link Supplier} is a {@link CompletionStage}.
+   *
+   * @param supplier a {@link Supplier} with a return value of {@link CompletionStage}
+   * @param <U> the type of the supplied stage's value
+   * @return the new {@link CompletionStage}
+   * @since 0.3.6
+   */
+  public static <U> CompletionStage<U> supplyAsyncCompose(Supplier<CompletionStage<U>> supplier) {
+    return dereference(CompletableFuture.supplyAsync(supplier));
+  }
+
+  /**
+   * This allows for a stage to be the return type of supplier when using supplyAsync and returns a plain stage.
+   *
+   * <p>This differs from {@link
+   * java.util.concurrent.CompletableFuture#supplyAsync(Supplier, Executor)} in that the
+   * function should return a {@link java.util.concurrent.CompletionStage} rather than the {@link CompletionStage} of
+   * a {@link CompletionStage} of a value when the return value of the {@link Supplier} is a {@link CompletionStage}.
+   *
+   * @param supplier a {@link Supplier} with a return value of {@link CompletionStage}
+   * @param executor a {@link Executor} the executor to use for asynchronous execution
+   * @param <U> the type of the supplied stage's value
+   * @return the new {@link CompletionStage}
+   * @since 0.3.6
+   */
+  public static <U> CompletionStage<U> supplyAsyncCompose(
+          Supplier<CompletionStage<U>> supplier, Executor executor) {
+    return dereference(CompletableFuture.supplyAsync(supplier, executor));
   }
 
   /**
