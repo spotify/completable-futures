@@ -9,7 +9,7 @@
   </parent>
 
   <artifactId>completable-futures</artifactId>
-  <version>0.3.6</version>
+  <version>0.3.7-SNAPSHOT</version>
 
   <name>completable-futures</name>
   <description>Convenience utilities for working with asynchronous Java 8</description>
@@ -22,7 +22,7 @@
   <scm>
     <connection>scm:git:https://github.com/spotify/completable-futures.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/spotify/completable-futures.git</developerConnection>
-    <tag>v0.3.6</tag>
+    <tag>HEAD</tag>
     <url>scm:https://github.com/spotify/completable-futures</url>
   </scm>
 
